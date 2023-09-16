@@ -1,0 +1,196 @@
+/* .nav{
+  position:absolute;
+  top: 0;
+  left:0;
+  width:100%;
+  z-index:100;
+} */
+
+.nav-ul li{
+   display: inline-block;
+   padding: 10px;
+}
+
+.logo{
+  width: 60px;
+  float: left;
+  border-radius: 30%;
+  margin-top: 0px;
+  margin-bottom: 1px;
+  margin-left: 2px;;
+}
+
+/* h1{
+  text-align: center;
+} */
+
+.forgot{
+  margin-left: 85%;
+}
+
+.nav-ul li a{
+  color: #fff;
+  padding: 5px;
+  text-decoration: none;
+}
+
+.nav-ul{
+padding: 5px;
+margin: 0px;
+background-color: black;
+/* position: fixed;
+display: block; */
+}
+
+.footer{
+  position: absolute;
+  bottom: 0;
+  text-align: center;
+  width: 100%;
+  background-color: black;
+}
+.footer h3{
+ color:#fff;
+}
+
+.register{
+  margin-left: 30%;
+}
+
+.inputbox{
+  display: block;
+  margin: 25px;
+  padding: 7px;
+  width: 300px;
+  border: 1px solid skyblue;
+}
+
+.button{
+  margin: 25px;
+  padding: 10px;
+  width: 150px;
+  border-color: skyblue;
+  border: 1px solid;
+  cursor: pointer;
+}
+
+.box{
+  width: auto;
+  height: auto;
+  display: inline-table;
+}
+
+/* .studentinput{
+  /* position:absolute; */
+  /* display: block;
+  margin: 1px;
+  padding: 3px;
+  width: 300px;
+  border: 1px solid skyblue; */
+
+
+.studentinput{
+  width: 70%;
+}
+
+.studentlabel{
+  width: 40%;
+}
+
+.formbody{
+  text-align: left;
+  padding: 20px 10px;
+}
+
+.registerform{
+  background-color: white;
+  border-radius: 5px;
+  width: auto;
+  margin: 20px auto;
+  padding: 20px;
+}
+
+.adminpanel{
+  /* background-color: #61dafb; */
+  margin-left: 0.03%;
+  display: flexbox;
+  
+}
+
+.bg{
+  display: inline-block
+}
+
+/* <Row className='dispaly'> */
+.dispaly{
+  display: flex;
+  margin: 0;
+}
+
+/* .adminpanel{
+  display: flexbox;
+} */
+
+.change {
+  width: 100%;
+  /* display:inline-block; */
+  /* height: 100vh;
+  background-color: black; */
+
+}
+
+.colorchange button{
+  border:black;
+  background-color: black;
+  color: #fff;
+}
+
+
+
+
+
+
+@media (prefers-reduced-motion: no-preference) {
+  .App-logo {
+    animation: App-logo-spin infinite 20s linear;
+  }
+}
+
+.App-header {
+  background-color: #282c34;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-size: calc(10px + 2vmin);
+  color: white;
+}
+
+.appbuton{
+  text-align: center;
+  margin: 25px;
+  padding: 10px;
+  width: 150px;
+ cursor: pointer;
+
+}
+
+.signup{
+  margin-left: 30%;
+  padding:25px;
+
+}
+
+.App-link {
+  color: #61dafb;
+}
+
+@keyframes App-logo-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
