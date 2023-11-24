@@ -18,7 +18,7 @@ import ListItemIcon from '@mui/material/ListItemIcon';
 import ListItemText from '@mui/material/ListItemText';
 import InboxIcon from '@mui/icons-material/MoveToInbox';
 import MailIcon from '@mui/icons-material/Mail';
-import TotalStudents from './TotalStudents';
+import { useNavigate } from 'react-router-dom';
 
 const drawerWidth = 240;
 
@@ -52,23 +52,23 @@ const DrawerHeader = styled('div')(({ theme }) => ({
   ...theme.mixins.toolbar,
 }));
 
-const AppBar = styled(MuiAppBar, {
-  shouldForwardProp: (prop) => prop !== 'open',
-})(({ theme, open }) => ({
-  zIndex: theme.zIndex.drawer + 1,
-  transition: theme.transitions.create(['width', 'margin'], {
-    easing: theme.transitions.easing.sharp,
-    duration: theme.transitions.duration.leavingScreen,
-  }),
-  ...(open && {
-    marginLeft: drawerWidth,
-    width: `calc(100% - ${drawerWidth}px)`,
-    transition: theme.transitions.create(['width', 'margin'], {
-      easing: theme.transitions.easing.sharp,
-      duration: theme.transitions.duration.enteringScreen,
-    }),
-  }),
-}));
+// const AppBar = styled(MuiAppBar, {
+//   shouldForwardProp: (prop) => prop !== 'open',
+// })(({ theme, open }) => ({
+//   zIndex: theme.zIndex.drawer + 1,
+//   transition: theme.transitions.create(['width', 'margin'], {
+//     easing: theme.transitions.easing.sharp,
+//     duration: theme.transitions.duration.leavingScreen,
+//   }),
+//   ...(open && {
+//     marginLeft: drawerWidth,
+//     width: `calc(100% - ${drawerWidth}px)`,
+//     transition: theme.transitions.create(['width', 'margin'], {
+//       easing: theme.transitions.easing.sharp,
+//       duration: theme.transitions.duration.enteringScreen,
+//     }),
+//   }),
+// }));
 
 const Drawer = styled(MuiDrawer, { shouldForwardProp: (prop) => prop !== 'open' })(
   ({ theme, open }) => ({
@@ -90,21 +90,20 @@ const Drawer = styled(MuiDrawer, { shouldForwardProp: (prop) => prop !== 'open' 
 const Sidenav=()=> {
   const theme = useTheme();
   const [open, setOpen] = React.useState(true);
+  const navigate=useNavigate();
 
-  const handleDrawerOpen = () => {
-    setOpen(true);
-  };
+//   const handleDrawerOpen = () => {
+//     setOpen(true);
+//   };
 
-  const handleDrawerClose = () => {
-    setOpen(false);
-  };
+//   const handleDrawerClose = () => {
+//     setOpen(false);
+//   };
 
   return (
-    <>
-    <TotalStudents/>
     <Box sx={{ display: 'flex' }}>
       <CssBaseline />
-      <AppBar position="fixed" open={open}>
+      {/* <AppBar position="fixed" open={open}>
         <Toolbar>
           <IconButton
             color="inherit"
@@ -119,19 +118,19 @@ const Sidenav=()=> {
             <MenuIcon />
           </IconButton>
           <Typography variant="h6" noWrap component="div">
-            Admin 
+            Mini variant drawer
           </Typography>
         </Toolbar>
-      </AppBar>
+      </AppBar> */}
       <Drawer variant="permanent" open={open}>
         <DrawerHeader>
-          <IconButton onClick={handleDrawerClose}>
+          <IconButton onClick={()=>setOpen(!open)}>
             {theme.direction === 'rtl' ? <ChevronRightIcon /> : <ChevronLeftIcon />}
           </IconButton>
         </DrawerHeader>
         <Divider />
         <List>
-        <ListItem disablePadding sx={{ display: 'block' }}>
+        <ListItem disablePadding sx={{ display: 'block' }} onClick={()=>{navigate("/addstudents")}} >
               <ListItemButton
                 sx={{
                   minHeight: 48,
@@ -146,12 +145,12 @@ const Sidenav=()=> {
                     justifyContent: 'center',
                   }}
                 >
-                 <InboxIcon /> 
+                  <InboxIcon /> 
                 </ListItemIcon>
-                <ListItemText primary="Home" sx={{ opacity: open ? 1 : 0 }} />
+                <ListItemText primary="Add Students" sx={{ opacity: open ? 1 : 0 }} />
               </ListItemButton>
             </ListItem>
-            <ListItem disablePadding sx={{ display: 'block' }}>
+            <ListItem disablePadding sx={{ display: 'block' }} onClick={()=>{navigate("/totalstudents")}}>
               <ListItemButton
                 sx={{
                   minHeight: 48,
@@ -166,12 +165,12 @@ const Sidenav=()=> {
                     justifyContent: 'center',
                   }}
                 >
-                 <InboxIcon /> 
+                  <InboxIcon /> 
                 </ListItemIcon>
-                <ListItemText primary="Add Student" sx={{ opacity: open ? 1 : 0 }} />
+                <ListItemText primary="Total Students" sx={{ opacity: open ? 1 : 0 }} />
               </ListItemButton>
             </ListItem>
-            <ListItem disablePadding sx={{ display: 'block' }}>
+            <ListItem disablePadding sx={{ display: 'block' }} onClick={()=>{navigate("/courses")}} >
               <ListItemButton
                 sx={{
                   minHeight: 48,
@@ -186,32 +185,12 @@ const Sidenav=()=> {
                     justifyContent: 'center',
                   }}
                 >
-                 <InboxIcon /> 
-                </ListItemIcon>
-                <ListItemText primary="Total Student" sx={{ opacity: open ? 1 : 0 }} />
-              </ListItemButton>
-            </ListItem>
-            <ListItem disablePadding sx={{ display: 'block' }}>
-              <ListItemButton
-                sx={{
-                  minHeight: 48,
-                  justifyContent: open ? 'initial' : 'center',
-                  px: 2.5,
-                }}
-              >
-                <ListItemIcon
-                  sx={{
-                    minWidth: 0,
-                    mr: open ? 3 : 'auto',
-                    justifyContent: 'center',
-                  }}
-                >
-                 <InboxIcon /> 
+                  <InboxIcon /> 
                 </ListItemIcon>
                 <ListItemText primary="Courses" sx={{ opacity: open ? 1 : 0 }} />
               </ListItemButton>
             </ListItem>
-            <ListItem disablePadding sx={{ display: 'block' }}>
+            <ListItem disablePadding sx={{ display: 'block' }} onClick={()=>{navigate("/addfaculty")}}>
               <ListItemButton
                 sx={{
                   minHeight: 48,
@@ -226,34 +205,33 @@ const Sidenav=()=> {
                     justifyContent: 'center',
                   }}
                 >
-                 <InboxIcon /> 
+                  <InboxIcon /> 
+                </ListItemIcon>
+                <ListItemText primary="Add Faculty" sx={{ opacity: open ? 1 : 0 }} />
+              </ListItemButton>
+            </ListItem>
+            <ListItem disablePadding sx={{ display: 'block' }} onClick={()=>{navigate("/faculty")}}>
+              <ListItemButton
+                sx={{
+                  minHeight: 48,
+                  justifyContent: open ? 'initial' : 'center',
+                  px: 2.5,
+                }}
+              >
+                <ListItemIcon
+                  sx={{
+                    minWidth: 0,
+                    mr: open ? 3 : 'auto',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <InboxIcon /> 
                 </ListItemIcon>
                 <ListItemText primary="Faculty" sx={{ opacity: open ? 1 : 0 }} />
               </ListItemButton>
-              
             </ListItem>
-            <ListItem disablePadding sx={{ display: 'block' }}>
-              <ListItemButton
-                sx={{
-                  minHeight: 48,
-                  justifyContent: open ? 'initial' : 'center',
-                  px: 2.5,
-                }}
-              >
-                <ListItemIcon
-                  sx={{
-                    minWidth: 0,
-                    mr: open ? 3 : 'auto',
-                    justifyContent: 'center',
-                  }}
-                >
 
-                 <InboxIcon /> 
-                </ListItemIcon>
-                <ListItemText primary="Logout" sx={{ opacity: open ? 1 : 0 }} />
-              </ListItemButton>
-            </ListItem>
-            <ListItem disablePadding sx={{ display: 'block' }}>
+            <ListItem disablePadding sx={{ display: 'block' }} onClick={()=>{navigate("/notice")}} >
               <ListItemButton
                 sx={{
                   minHeight: 48,
@@ -268,14 +246,13 @@ const Sidenav=()=> {
                     justifyContent: 'center',
                   }}
                 >
-                 <InboxIcon /> 
+                  <InboxIcon /> 
                 </ListItemIcon>
-                <ListItemText primary="Settings" sx={{ opacity: open ? 1 : 0 }} />
+                <ListItemText primary="Notice" sx={{ opacity: open ? 1 : 0 }} />
               </ListItemButton>
             </ListItem>
-            
         </List>
-        <Divider />
+        
         {/* <List>
         <ListItem key={text} disablePadding sx={{ display: 'block' }}>
               <ListItemButton
@@ -299,19 +276,8 @@ const Sidenav=()=> {
             </ListItem>
         </List> */}
       </Drawer>
-      <Box component="main" sx={{ flexGrow: 1, p: 3 }}>
-        <DrawerHeader />
-        <Typography paragraph>
-          MANIA
-        </Typography>
-        <Typography paragraph>
-         SURBE
-        </Typography>
-      </Box>
+      
     </Box>
-    </>
   );
 }
-
 export default Sidenav;
-

@@ -1,0 +1,6 @@
+FirstName,LastName,Email ,Password,CurrentAddress,PermanentAddress,InstituteName,HighestQualification,Gender,Courses,ContactNumber,AlternateNumber,ReferalCode
+Ankit ,Jangid,ankitkumarjangid12@gmail.com,1234,Jaipur,Jaipur,REGEX,12,Male,MERN,1234567890,987654321,asdf
+Pranjal ,Sharma,pranjalsidh2002@gmail.com,1234,Jaipur,Jaipur,REGEX,12,Male,MERN,1234567890,987654321,sdf
+Utkarsh,Nandwana,utkarshnandwana@gmail.com,1234,Jaipur,Jaipur,REGEX,12,Male,MERN,1234567890,987654321,dfg
+Hemraj,Saini,hemrajsaini8078@gmail.com,1234,Jaipur,Jaipur,REGEX,12,Male,MERN,1234567890,987654321,dfg
+Manish ,Singh,29manish2001@gmail.com,1234,Jaipur,Jaipur,REGEX,12,Male,MERN,987654321,1234567890,dfg
