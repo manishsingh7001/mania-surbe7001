@@ -4,6 +4,8 @@ import Sidenav from '../Sidenav'
 import Navbar from './Navbar';
 import { Box } from '@mui/material'
 import Typography from '@mui/material/Typography';
+import CsvUploader from './AddCSV';
+
 
 const AddStudents = () => {
     const [firstname, setFirstName] = useState();
@@ -20,6 +22,7 @@ const AddStudents = () => {
     const [courses, setCourses] = useState();
     const [referalcode, setReferalCode] = useState();
 
+    
     
 const navigate = useNavigate()
     const register = async (e) => {
@@ -71,6 +74,8 @@ const navigate = useNavigate()
 
     }
 
+    
+
 
 
     return (
@@ -79,6 +84,7 @@ const navigate = useNavigate()
             <Box sx={{ display: 'flex' }}>
                 <Sidenav />
                 {/* <h1>Add students</h1> */}
+                <CsvUploader/>
 
                 <div className='container'>
 

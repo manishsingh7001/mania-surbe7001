@@ -12,9 +12,13 @@ const User = require('./db/User')
 const Facultie=require('./db/Facultie')
 const Quiz = require('./db/Quizz')
 const Notice=require('./db/Notice')
+const pdfSchema = require('./db/TimeTable')
+const fs = require('fs');
+
 const port=5000;
 // const { body, validationResult } = require("express-validator");
 const { body, validationResult } = require("express-validator");
+const TimeTable = require('./db/TimeTable');
 // require('./db/config')
 require('./db/dbconfig')
 
@@ -611,7 +615,7 @@ app.post('/importCSV', upload.single('file'), async(req,res) => {
 
     csv()
     .fromFile(req.file.path)
-    .then(async(response)=> {
+    .then(async (response)=> {
       for(var x= 0; x < response.length; x++){
         stdData.push({
           firstname: response[x].FirstName,
@@ -624,8 +628,8 @@ app.post('/importCSV', upload.single('file'), async(req,res) => {
           highestqualification: response[x].HighestQualification,
           gender: response[x].Gender,
           courses: response[x].Courses,
-          contactnumber: response[x].ConatctNumber,
-          alternatenumber: response[x].AlternateNuber,
+          contactnumber: response[x].ContactNumber,
+          alternatenumber: response[x].AlternateNumber,
           referalcode: response[x].ReferalCode
 
         })
@@ -641,7 +645,51 @@ app.post('/importCSV', upload.single('file'), async(req,res) => {
   }
 })
 
+// Set up multer storage for handling PDF uploads
+const storage1 = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, './public/uploads');
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+    const fileExtension = path.extname(file.originalname);
+    cb(null, file.fieldname + '-' + uniqueSuffix + fileExtension);
+  },
+});
 
+// Create a multer instance for handling PDF uploads
+const upload1 = multer({ storage: storage1 });
+
+app.post('/upload-timetable', upload1.single('pdfFile'), async (req, res) => {
+  try {
+    const newPdf = new TimeTable({
+      filename: req.file.filename,
+      path: req.file.path,
+    });
+
+    await newPdf.save();
+    res.json({ success: true, message: 'PDF uploaded successfully' });
+    
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+app.get('/pdf/:id', async (req, res) => {
+  try {
+    const pdf = await TimeTable.findById(req.params.id);
+
+    if (!pdf) {
+      return res.status(404).json({ message: 'PDF not found' });
+    }
+
+    // Stream the PDF file to the client
+    const fileStream = fs.createReadStream(pdf.path);
+    fileStream.pipe(res);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
 
 
 

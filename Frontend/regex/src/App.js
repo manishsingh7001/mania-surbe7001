@@ -54,6 +54,8 @@ import StdPassword from './StudentPanel/StdPassword';
 import AddQuiz from './Admin/componentpage/quizz/AddQuiz';
 
 import Notice from './Admin/componentpage/Notice';
+import TimeTable from './Admin/componentpage/timetable';
+import GetTimeTable from './Admin/componentpage/getTimeTable';
 
 // import {Row, Col, Container, DropdownButton, Dropdown, Button, ButtonGroup} from 'react-bootstrap'
 // import { MDBFooter, MDBContainer, MDBRow, MDBCol, MDBIcon } from 'mdb-react-ui-kit';
@@ -126,6 +128,11 @@ function App() {
           <Route path="/" element={<Main />} />
           <Route path="/quiz" element={<Quizz />} />
           <Route path="/addquiz" element={<AddQuiz/>} />
+          <Route path="/upload-timetable" element={<TimeTable/>} />
+          <Route path="/pdf/:id" element={<GetTimeTable/>} />
+
+
+
 
 
 
