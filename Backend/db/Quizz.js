@@ -5,12 +5,12 @@ const QuizzSchema = new mongoose.Schema({
     //     type: mongoose.Schema.Types.ObjectId,
     //     ref: 'user'
     // },
-    question: String,
-    option1: String,
-    option2: String,
-    option3: String,
-    option4: String,
-    answer: String
+    title: String,
+    questions: [{
+      questionText: String,
+      options: [String],
+      correctOptionIndex: Number,
+    }],
    
 
 

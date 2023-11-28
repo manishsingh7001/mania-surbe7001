@@ -345,140 +345,177 @@ app.get("/facultylogin", async (req, res) => {
 // );
 
 
-app.post("/addquiz",async(req,res)=>{
-  let saveQuiz = new Quiz(req.body);
-  let result = await saveQuiz.save();
-  res.send(result) 
-})
+// app.post("/addquiz",async(req,res)=>{
+//   let saveQuiz = new Quiz(req.body);
+//   let result = await saveQuiz.save();
+//   res.send(result) 
+// })
+app.post('/addquiz', async (req, res) => {
+  try {
+    // Create a new Quiz instance
+    const newQuiz = new Quiz({
+      title: req.body.title,
+      questions: req.body.questions,
+    });
+
+    // Save the quiz to the database
+    const result = await newQuiz.save();
+
+    res.send(result);
+  } catch (error) {
+    console.error(error);
+    res.status(500).send('Internal Server Error');
+  }
+});
+
+// Endpoint to get all quizzes
+app.get('/quizzes', async (req, res) => {
+  try {
+    const quizzes = await Quiz.find();
+    res.json(quizzes);
+  } catch (error) {
+    console.error('Error fetching quizzes:', error);
+    res.status(500).send('Internal Server Error');
+  }
+});
+
+// Endpoint to get a quiz by ID
+app.get('/quizzes/:quizId', async (req, res) => {
+  const quizId = req.params.quizId;
+
+  try {
+    const quiz = await Quiz.findById(quizId);
+    if (!quiz) {
+      return res.status(404).send('Quiz not found');
+    }
+
+    res.json(quiz);
+  } catch (error) {
+    console.error('Error fetching quiz by ID:', error);
+    res.status(500).send('Internal Server Error');
+  }
+});
+
+// Endpoint to update a quiz by ID
+app.put('/quizzes/:quizId', async (req, res) => {
+  const quizId = req.params.quizId;
+
+  try {
+    const updatedQuiz = await Quiz.findByIdAndUpdate(quizId, req.body, { new: true });
+    if (!updatedQuiz) {
+      return res.status(404).send('Quiz not found');
+    }
+
+    res.json(updatedQuiz);
+  } catch (error) {
+    console.error('Error updating quiz by ID:', error);
+    res.status(500).send('Internal Server Error');
+  }
+});
+
+// Endpoint to delete a quiz by ID
+app.delete('/quizzes/:quizId', async (req, res) => {
+  const quizId = req.params.quizId;
+
+  try {
+    const deletedQuiz = await Quiz.findByIdAndDelete(quizId);
+    if (!deletedQuiz) {
+      return res.status(404).send('Quiz not found');
+    }
+
+    res.json({ message: 'Quiz deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting quiz by ID:', error);
+    res.status(500).send('Internal Server Error');
+  }
+});
+
 
 
 
 
 //  Get All the QUIZ using : GET "/api/quiz/getuser" .Login required
-app.get("/fetchallquiz", async (req, res) => {
-  try {
-    const quizs = await Quiz.find({ user: req.user.id });
-    res.json(quizs);
-  } catch (error) {
-    console.error(error.message);
-    res.status(500).send("Internal Server Error");
-  }
-});
+// app.get("/fetchallquiz", async (req, res) => {
+//   try {
+//     const quizs = await Quiz.find({ user: req.user.id });
+//     res.json(quizs);
+//   } catch (error) {
+//     console.error(error.message);
+//     res.status(500).send("Internal Server Error");
+//   }
+// });
 
-//  Fetch all the JSON for quiz collection
-app.get("/fetchallquiznoauthentication/:message", async (req, res) => {
-  try {
-    const quizs = await Quiz.find({ code: req.params.message});
-    res.json(quizs);
+// //  Fetch all the JSON for quiz collection
+// app.get("/fetchallquiznoauthentication/:message", async (req, res) => {
+//   try {
+//     const quizs = await Quiz.find({ code: req.params.message});
+//     res.json(quizs);
 
-  } catch (error) {
-    console.error(error.message);
-    res.status(500).send("Internal Server Error");
-  }
-});
-
-
-
-
-
-//   Update 
-app.put("/updatequiz/:id",async (req, res) => {
-const { question, option1, option2, option3, option4, answe } = req.body;
-//Create a new quiz object
-const newQuiz = {};
-if (question) {
-  newQuiz.question = question;
-}
-if (option1) {
-  newQuiz.option1 = option1;
-}
-if (option2) {
-  newQuiz.option2 = option2;
-}
-if (option3) {
-  newQuiz.option3 = option3;
-}
-if (option4) {
-  newQuiz.option4 = option4;
-}
-if (answer) {
-  newQuiz.answer = answer;
-}
-if (title) {
-  newQuiz.title = title;
-}
-if (mcq) {
-  newQuiz.mcq = mcq;
-}
-if (code) {
-  newQuiz.code = code;
-}
-
-console.log(req.params.id);
-//Find the quiz to be updated and update it
-try {
-  var quiz = await Quiz.findById(req.params.id);
-  console.log(quiz);
-  if (!quiz) {
-    res.status(404).send("Not Found");
-  }
-  if (quiz.user.toString() !== req.user.id) {
-    return res.status(401).send("Not Allowed");
-  }
-  quiz = await Quiz.findByIdAndUpdate(
-    req.params.id,
-    { $set: newQuiz },
-    { new: true }
-  );
-  res.json({ quiz });
-} catch (error) {
-  console.error(error.message);
-  res.status(500).send("Internal Server Error");
-}
-});
+//   } catch (error) {
+//     console.error(error.message);
+//     res.status(500).send("Internal Server Error");
+//   }
+// });
 
 
 
 
 
+// //   Update 
+// app.put("/updatequiz/:id",async (req, res) => {
+// const { question, option1, option2, option3, option4, answe } = req.body;
+// //Create a new quiz object
+// const newQuiz = {};
+// if (question) {
+//   newQuiz.question = question;
+// }
+// if (option1) {
+//   newQuiz.option1 = option1;
+// }
+// if (option2) {
+//   newQuiz.option2 = option2;
+// }
+// if (option3) {
+//   newQuiz.option3 = option3;
+// }
+// if (option4) {
+//   newQuiz.option4 = option4;
+// }
+// if (answer) {
+//   newQuiz.answer = answer;
+// }
+// if (title) {
+//   newQuiz.title = title;
+// }
+// if (mcq) {
+//   newQuiz.mcq = mcq;
+// }
+// if (code) {
+//   newQuiz.code = code;
+// }
 
-
-
-//  Update 
-app.put("/updatecode/:id",async (req, res) => {
-const { code } = req.body;
-//Create a new quiz object
-const newQuiz = {};
-if (code) {
-  newQuiz.code = code;
-}
-
-const numberHAI = (req.params.id)
-  console.log(numberHAI, typeof numberHAI)
 // console.log(req.params.id);
-//Find the quiz to be updated and update it
-try {
-  var quiz = await Quiz.find({"user": numberHAI});
-  // console.log(quiz);
-
-  if (!quiz) {
-    res.status(404).send("Not Found");
-  }
-  // if (quiz.user.toString() !== req.user.id) {
-  //   return res.status(401).send("Not Allowed");
-  // }
-
-  quiz = await Quiz.updateMany(
-    {"user": numberHAI},
-    { $set: newQuiz },
-    { new: true }
-  );
-  res.json({ quiz });
-} catch (error) {
-  console.error(error.message);
-  res.status(500).send("Internal Server Error");
-}
-});
+// //Find the quiz to be updated and update it
+// try {
+//   var quiz = await Quiz.findById(req.params.id);
+//   console.log(quiz);
+//   if (!quiz) {
+//     res.status(404).send("Not Found");
+//   }
+//   if (quiz.user.toString() !== req.user.id) {
+//     return res.status(401).send("Not Allowed");
+//   }
+//   quiz = await Quiz.findByIdAndUpdate(
+//     req.params.id,
+//     { $set: newQuiz },
+//     { new: true }
+//   );
+//   res.json({ quiz });
+// } catch (error) {
+//   console.error(error.message);
+//   res.status(500).send("Internal Server Error");
+// }
+// });
 
 
 
@@ -487,27 +524,70 @@ try {
 
 
 
+// //  Update 
+// app.put("/updatecode/:id",async (req, res) => {
+// const { code } = req.body;
+// //Create a new quiz object
+// const newQuiz = {};
+// if (code) {
+//   newQuiz.code = code;
+// }
 
-// ROUTE 4 : Delete an existing quiz using : DELETE "/api/quizs/deletequiz/:id" .Login required
-app.delete("/deletequiz/:id",async (req, res) => {
-//Find the quiz to be deleted and delete it
-try {
-  let quiz = await Quiz.findById(req.params.id);
-  if (!quiz) {
-    res.status(404).send("Not Found");
-  }
-  //Allow deletion only if userr owns this quiz
-  if (quiz.user.toString() !== req.user.id) {
-    //if not authenticated user
-    return res.status(401).send("Not Allowed");
-  }
-  quiz = await Quiz.findByIdAndDelete(req.params.id);
-  res.json({ Success: "Quiz has been deleted" });
-} catch (error) {
-  console.error(error.message);
-  res.status(500).send("Internal Server Error");
-}
-});
+// const numberHAI = (req.params.id)
+//   console.log(numberHAI, typeof numberHAI)
+// // console.log(req.params.id);
+// //Find the quiz to be updated and update it
+// try {
+//   var quiz = await Quiz.find({"user": numberHAI});
+//   // console.log(quiz);
+
+//   if (!quiz) {
+//     res.status(404).send("Not Found");
+//   }
+//   // if (quiz.user.toString() !== req.user.id) {
+//   //   return res.status(401).send("Not Allowed");
+//   // }
+
+//   quiz = await Quiz.updateMany(
+//     {"user": numberHAI},
+//     { $set: newQuiz },
+//     { new: true }
+//   );
+//   res.json({ quiz });
+// } catch (error) {
+//   console.error(error.message);
+//   res.status(500).send("Internal Server Error");
+// }
+// });
+
+
+
+
+
+
+
+
+
+// // ROUTE 4 : Delete an existing quiz using : DELETE "/api/quizs/deletequiz/:id" .Login required
+// app.delete("/deletequiz/:id",async (req, res) => {
+// //Find the quiz to be deleted and delete it
+// try {
+//   let quiz = await Quiz.findById(req.params.id);
+//   if (!quiz) {
+//     res.status(404).send("Not Found");
+//   }
+//   //Allow deletion only if userr owns this quiz
+//   if (quiz.user.toString() !== req.user.id) {
+//     //if not authenticated user
+//     return res.status(401).send("Not Allowed");
+//   }
+//   quiz = await Quiz.findByIdAndDelete(req.params.id);
+//   res.json({ Success: "Quiz has been deleted" });
+// } catch (error) {
+//   console.error(error.message);
+//   res.status(500).send("Internal Server Error");
+// }
+// });
 
 
 //Notice api
