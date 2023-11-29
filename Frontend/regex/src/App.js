@@ -56,6 +56,7 @@ import CreateQuizForm from "./Admin/componentpage/quizz/AddQuiz";
 import QuizList from "./Admin/componentpage/quizz/QuizList";
 import UpdateQuiz from "./Admin/componentpage/quizz/UpdateQuiz";
 import ViewQuiz from "./Admin/componentpage/quizz/ViewQuiz";
+import QuizTaker from "./Admin/componentpage/quizz/score";
 
 // import {Row, Col, Container, DropdownButton, Dropdown, Button, ButtonGroup} from 'react-bootstrap'
 // import { MDBFooter, MDBContainer, MDBRow, MDBCol, MDBIcon } from 'mdb-react-ui-kit';
@@ -117,6 +118,9 @@ function App() {
           <Route path="/quizzes/:quizId/update" element={<UpdateQuiz />} />
           <Route path="/addquiz" element={<CreateQuizForm />} />
           <Route path="/quizzes/:quizId" element={<ViewQuiz />} />
+          <Route path="/quiz/:quizId" element={<QuizTaker />} />
+
+
 
           <Route path="/upload-timetable" element={<TimeTable />} />
           <Route path="/pdf/:id" element={<GetTimeTable />} />

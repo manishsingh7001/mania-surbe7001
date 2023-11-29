@@ -10,6 +10,10 @@ const QuizzSchema = new mongoose.Schema(
         correctOptionIndex: Number,
       },
     ],
+    scores: [{
+        userId: String, // Assuming a string identifier for users
+        score: Number,
+      }],
   },
   { timestamps: true }
 );

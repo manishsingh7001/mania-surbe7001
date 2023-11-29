@@ -415,6 +415,38 @@ app.delete("/quizzes/:quizId", async (req, res) => {
   }
 });
 
+app.post('/submitquiz/:quizId', async (req, res) => {
+  const quizId = req.params.quizId;
+  const submittedAnswers = req.body.answers;
+  const userId = req.body.userId; // Assuming you're sending the user ID in the request body
+
+  try {
+    // Fetch the quiz from the database
+    const quiz = await Quiz.findById(quizId);
+    if (!quiz) {
+      return res.status(404).send('Quiz not found');
+    }
+
+    // Calculate the score
+    let score = 0;
+    quiz.questions.forEach((question, index) => {
+      if (submittedAnswers[index] === question.correctOptionIndex) {
+        score++;
+      }
+    });
+
+    // Save the score to the database
+    quiz.scores.push({ userId, score });
+    await quiz.save();
+
+    res.json({ score });
+  } catch (error) {
+    console.error('Error submitting quiz:', error);
+    res.status(500).send('Internal Server Error');
+  }
+});
+
+
 //Notice api
 
 // getnotice
