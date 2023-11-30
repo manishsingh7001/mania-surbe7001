@@ -4,6 +4,8 @@ const app = express();
 const multer = require("multer");
 const path = require("path");
 const bodyparser = require("body-parser");
+const jwt = require('jsonwebtoken');
+const bcrypt = require('bcrypt');
 const csv = require("csvtojson");
 const Admin = require("./db/Admin");
 const Addstd = require("./db/Addstd");
@@ -28,33 +30,76 @@ app.use(bodyparser.urlencoded({ extended: true }));
 app.use(express.static(path.resolve(__dirname, "public")));
 
 // Admin Signup
-app.post("/adminsignup", async (req, res) => {
-  let admin = new Admin(req.body);
-  let result = await admin.save();
-  res.send(result);
-});
 
-// Admin Login
-app.get("/adminlogin", async (req, res) => {
-  let admin = await Admin.findOne(req.body);
-  if (req.body.email && req.body.password) {
-    if (admin) {
-      res.send(admin);
-    } else {
-      res.send({ result: "No Match Found" });
+app.post("/adminsignup", async (req, res) => {
+  try {
+    const { name, email, password } = req.body;
+
+    if (!name || !email || !password) {
+      return res.status(400).json({ error: "Name, email, and password are required" });
     }
-  } else {
-    res.send({ result: "No Match Found" });
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({ error: "Invalid email format" });
+    }
+
+    const passwordRegex = /^(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[^a-zA-Z0-9]).{8,}$/;
+    if (!passwordRegex.test(password)) {
+      return res.status(400).json({
+        error: "Password must contain at least 8 characters, including at least one uppercase letter, one lowercase letter, one number, and one special character."
+      });
+    }
+
+    const existingAdmin = await Admin.findOne({ email });
+    if (existingAdmin) {
+      return res.status(400).json({ error: "Email is already registered" });
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    const admin = new Admin({
+      name,
+      email,
+      password: hashedPassword,
+    });
+
+    const result = await admin.save();
+
+    res.status(201).json({ message: "Admin successfully registered", adminId: result._id });
+  } catch (error) {
+    console.error('Error signing up admin:', error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+// Admin Login
+app.post("/adminlogin", async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    if (!email || !password) {
+      return res.status(400).json({ error: "Email and password are required" });
+    }
+
+    const admin = await Admin.findOne({ email });
+
+    if (admin && await bcrypt.compare(password, admin.password)) {
+      const token = jwt.sign({ adminId: admin._id, email: admin.email }, 'your-secret-key', { expiresIn: '1h' });
+
+      res.json({ token, admin });
+    } else {
+      res.status(401).json({ error: "Invalid email or password" });
+    }
+  } catch (error) {
+    console.error('Error logging in admin:', error);
+    res.status(500).json({ error: "Internal Server Error" });
   }
 });
 
-// app.post("/student",async(req,res)=>{
-//   let student=new Student(req.body);
-//   let std=await student.save();
-//   res.send(std);
-// })
 
-// Add Student
+
+//Student Registration
+
 app.post("/addstd", async (req, res) => {
   const {
     firstname,
@@ -71,53 +116,70 @@ app.post("/addstd", async (req, res) => {
     alternatenumber,
     referalcode,
   } = req.body;
-  if (
-    !firstname ||
-    !lastname ||
-    !email ||
-    !password ||
-    !currentaddress ||
-    !permanentaddress ||
-    !institutename ||
-    !highestqualification ||
-    !gender ||
-    !courses ||
-    !contactnumber ||
-    !alternatenumber ||
-    !referalcode
-  ) {
-    res.json("please fill the form data");
-  }
 
   try {
-    const prestudent = await Addstd.findOne({ email: email });
-    console.log(prestudent);
+    if (
+      !firstname ||
+      !lastname ||
+      !email ||
+      !password ||
+      !currentaddress ||
+      !permanentaddress ||
+      !institutename ||
+      !highestqualification ||
+      !gender ||
+      !courses ||
+      !contactnumber ||
+      !alternatenumber ||
+      !referalcode
+    ) {
+      return res.status(400).json({ error: "Please fill in all the required fields" });
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({ error: "Invalid email format" });
+    }
+
+    const passwordRegex = /^(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[^a-zA-Z0-9]).{8,}$/;
+    if (!passwordRegex.test(password)) {
+      return res.status(400).json({
+        error: "Password must contain at least 8 characters, including at least one uppercase letter, one lowercase letter, one number, and one special character."
+      });
+    }
+
+    const prestudent = await Addstd.findOne({ email });
 
     if (prestudent) {
-      res.json("This student is already registered in data");
-    } else {
-      const std = new Addstd({
-        firstname,
-        lastname,
-        email,
-        password,
-        currentaddress,
-        permanentaddress,
-        institutename,
-        highestqualification,
-        gender,
-        courses,
-        contactnumber,
-        alternatenumber,
-        referalcode,
-      });
-      await std.save();
-      res.json(std);
-      console.log(std);
+      return res.status(400).json({ error: "This email is already registered" });
     }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    const std = new Addstd({
+      firstname,
+      lastname,
+      email,
+      password: hashedPassword,
+      currentaddress,
+      permanentaddress,
+      institutename,
+      highestqualification,
+      gender,
+      courses,
+      contactnumber,
+      alternatenumber,
+      referalcode,
+    });
+
+    await std.save();
+
+    res.status(201).json({ message: "Student successfully registered", studentId: std._id });
   } catch (error) {
-    res.json(error);
+    console.error('Error registering student:', error);
+    res.status(500).json({ error: "Internal Server Error" });
   }
+});
 
   // Get Student Data
   app.get("/getdata", async (req, res) => {
@@ -125,19 +187,12 @@ app.post("/addstd", async (req, res) => {
       const std = await Addstd.find();
       res.json(std);
       console.log(std);
-      // const corse_data = std.filter((item)=>{
 
-      //   return item.courses == a
-
-      // })
-
-      // console.log(python_data)
-      // res.json(python_data)
     } catch (error) {
       res.json(error);
     }
   });
-});
+
 
 // Student Profile View
 app.get("/getuser/:id", async (req, res) => {

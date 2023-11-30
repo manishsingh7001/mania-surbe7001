@@ -87,18 +87,18 @@ function App() {
           <Route path="/user" element={<h1>User</h1>} />
 
           {/* <Route path="/admin" element={<Admin/>} /> */}
-          <Route path="/admin" element={<AdminLogin />} />
-          <Route path="/adminsignup" element={<AdminSignup />} />
-          <Route path="/adminpanel" element={<AdminPanel />} />
-          <Route path="/logout" element={<h1>Logout</h1>} />
+          <Route path="/admin/login" element={<AdminLogin />} />
+          <Route path="/admin/signup" element={<AdminSignup />} />
+          <Route path="/admin/dashboard" element={<AdminPanel />} />
+          <Route path="/admin/logout" element={<h1>Logout</h1>} />
 
           <Route path="/sidenav" element={<Sidenav />} />
           <Route path="/navbar" element={<Navbar />} />
 
-          <Route path="/addstudents" element={<AddStudents />} />
-          <Route path="/totalstudents" element={<TotalStudents />} />
-          <Route path="/detail/:id" element={<Detail />} />
-          <Route path="/update/:id" element={<Update />} />
+          <Route path="/admin/addstudents" element={<AddStudents />} />
+          <Route path="/admin/totalstudents" element={<TotalStudents />} />
+          <Route path="/admin/students/detail/:id" element={<Detail />} />
+          <Route path="/admin/students/update/:id" element={<Update />} />
 
           <Route path="/courses" element={<Courses />} />
 
