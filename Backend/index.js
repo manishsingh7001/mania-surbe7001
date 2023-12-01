@@ -184,14 +184,14 @@ app.post("/addstd", async (req, res) => {
   // Get Student Data
   app.get("/getdata", async (req, res) => {
     try {
+      // Retrieve data without any authentication or validation
       const std = await Addstd.find();
-      res.json(std);
-      console.log(std);
-
+      res.json("Student Details Found Successfully",std);
     } catch (error) {
-      res.json(error);
+      res.status(500).json({ error: "Internal Server Error" });
     }
   });
+  
 
 
 // Student Profile View
@@ -201,8 +201,7 @@ app.get("/getuser/:id", async (req, res) => {
     const { id } = req.params;
 
     const userindividual = await Addstd.findById({ _id: id });
-    console.log(userindividual);
-    res.json(userindividual);
+    res.json("Student Profile Fetched Successfully",userindividual);
   } catch (error) {
     res.json(error);
   }
@@ -212,13 +211,46 @@ app.get("/getuser/:id", async (req, res) => {
 app.patch("/updateuser/:id", async (req, res) => {
   try {
     const { id } = req.params;
-    const updaQuizd = await Addstd.findByIdAndUpdate(id, req.body, {
+
+    const existingUser = await Addstd.findById(id);
+
+    if (!existingUser) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    const isDataChanged = !Object.keys(req.body).every(key =>
+      JSON.stringify(existingUser[key]) === JSON.stringify(req.body[key])
+    );
+
+    if (!isDataChanged) {
+      return res.status(400).json({ message: "No changes made" });
+    }
+
+    if (req.body.email) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(req.body.email)) {
+        return res.status(400).json({ error: "Invalid email format" });
+      }
+    }
+
+    if (req.body.password) {
+      const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+      if (!passwordRegex.test(req.body.password)) {
+        return res.status(400).json({
+          error: "Invalid password format. Password must be at least 8 characters long and contain at least one lowercase letter, one uppercase letter, one number, and one special character.",
+        });
+      }
+
+      req.body.password = await bcrypt.hash(req.body.password, 10);
+    }
+
+    const updatedUser = await Addstd.findByIdAndUpdate(id, req.body, {
       new: true,
     });
-    console.log(updaQuizd);
-    res.json(updaQuizd);
+
+    res.json(updatedUser);
   } catch (error) {
-    res.json(error);
+    res.status(500).json({ error: "Internal Server Error" });
   }
 });
 
@@ -226,13 +258,18 @@ app.patch("/updateuser/:id", async (req, res) => {
 app.delete("/delete-student/:id", async (req, res) => {
   try {
     const { id } = req.params;
-    const deleQuizd = await Addstd.findByIdAndDelete({ _id: id });
-    console.log(deleQuizd);
-    res.json(deleQuizd);
+    const deletedStudent = await Addstd.findByIdAndDelete({ _id: id });
+
+    if (deletedStudent) {
+      res.json({ message: `Student with ID ${id} successfully deleted` });
+    } else {
+      res.status(404).json({ error: `Student with ID ${id} not found` });
+    }
   } catch (error) {
-    res.json(error);
+    res.status(500).json({ error: "Internal Server Error" });
   }
 });
+
 
 // Add Faculty
 app.post("/addfaculty", async (req, res) => {
@@ -250,33 +287,49 @@ app.post("/addfaculty", async (req, res) => {
     contactnumber,
     alternatenumber,
   } = req.body;
-  if (
-    !firstname ||
-    !lastname ||
-    !email ||
-    !password ||
-    !currentaddress ||
-    !permanentaddress ||
-    !institutename ||
-    !highestqualification ||
-    !gender ||
-    !courses ||
-    !contactnumber ||
-    !alternatenumber
-  ) {
-    res.json("please fill the form data");
+
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(email)) {
+    return res.status(400).json({ error: "Invalid email format" });
   }
+
+  const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+  if (!passwordRegex.test(password)) {
+    return res.status(400).json({
+      error: "Invalid password format. Password must be at least 8 characters long and contain at least one lowercase letter, one uppercase letter, one number, and one special character.",
+    });
+  }
+
+  const requiredFields = [
+    firstname,
+    lastname,
+    currentaddress,
+    permanentaddress,
+    institutename,
+    highestqualification,
+    gender,
+    courses,
+    contactnumber,
+    alternatenumber,
+  ];
+
+  if (requiredFields.some(field => !field)) {
+    return res.status(400).json("Please fill in all required form data");
+  }
+
   try {
     const prefaculty = await teacher.findOne({ email: email });
-    console.log(prefaculty);
+
     if (prefaculty) {
-      res.json("this is alrready registered");
+      return res.status(409).json("This email is already registered");
     } else {
+      const hashedPassword = await bcrypt.hash(password, 10);
+
       const faculty = new teacher({
         firstname,
         lastname,
         email,
-        password,
+        password: hashedPassword,
         currentaddress,
         permanentaddress,
         institutename,
@@ -286,12 +339,12 @@ app.post("/addfaculty", async (req, res) => {
         contactnumber,
         alternatenumber,
       });
+
       await faculty.save();
-      res.json(faculty);
-      console.log(faculty);
+      return res.status(201).json(faculty);
     }
   } catch (error) {
-    res.json(error);
+    return res.status(500).json(error);
   }
 });
 
@@ -299,38 +352,69 @@ app.post("/addfaculty", async (req, res) => {
 app.get("/getfaculty", async (req, res) => {
   try {
     const facultydata = await teacher.find();
-    res.json(facultydata);
-    console.log(facultydata);
+
+    if (!facultydata || facultydata.length === 0) {
+      return res.json({ message: "No faculty members found" });
+    }
+
+    res.json({ message: "Faculty information retrieved successfully", data: facultydata });
   } catch (error) {
-    res.json(error);
+    res.status(500).json({ error: "Internal Server Error" });
   }
 });
+
 
 //get faculty view
 app.get("/facultyview/:id", async (req, res) => {
   try {
-    console.log(req.params);
     const { id } = req.params;
-
     const facultyview = await teacher.findById({ _id: id });
-    console.log(facultyview);
-    res.json(facultyview);
+
+    if (!facultyview) {
+      return res.status(404).json({ error: "Faculty not found" });
+    }
+
+    res.json({ message: "Faculty information retrieved successfully", data: facultyview });
   } catch (error) {
-    res.json(error);
+    res.status(500).json({ error: "Internal Server Error" });
   }
 });
+
 
 //uodate faculty data
 app.patch("/updatefaculty/:id", async (req, res) => {
   try {
     const { id } = req.params;
 
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (req.body.email && !emailRegex.test(req.body.email)) {
+      return res.status(400).json({ error: "Invalid email format" });
+    }
+
+    // Validate password format
+    if (req.body.password) {
+      const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+      if (!passwordRegex.test(req.body.password)) {
+        return res.status(400).json({
+          error: "Invalid password format. Password must be at least 8 characters long and contain at least one lowercase letter, one uppercase letter, one number, and one special character.",
+        });
+      }
+      // Hash the new password before updating
+      req.body.password = await bcrypt.hash(req.body.password, 10);
+    }
+
     const updatefaculty = await teacher.findByIdAndUpdate(id, req.body, {
       new: true,
     });
+    
+    if (!updatefaculty) {
+      return res.status(404).json({ error: "Faculty not found" });
+    }
+
     res.json(updatefaculty);
   } catch (error) {
-    res.json(error);
+    res.status(500).json(error);
   }
 });
 
@@ -340,12 +424,16 @@ app.delete("/deletefaculty/:id", async (req, res) => {
     const { id } = req.params;
 
     const deletefaculty = await teacher.findByIdAndDelete({ _id: id });
-    res.json(deletefaculty);
+    
+    if (!deletefaculty) {
+      return res.status(404).json({ error: "Faculty not found. Deletion unsuccessful" });
+    }
+
+    res.json({ message: "Faculty Deleted Successfully" });
   } catch (error) {
-    res.json(error);
+    res.status(500).json(error);
   }
 });
-
 // user signup
 app.post("/usersignup", async (req, res) => {
   let user = new User(req.body);
