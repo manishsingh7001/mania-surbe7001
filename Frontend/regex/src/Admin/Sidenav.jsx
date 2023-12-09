@@ -130,7 +130,7 @@ const Sidenav=()=> {
         </DrawerHeader>
         <Divider />
         <List>
-        <ListItem disablePadding sx={{ display: 'block' }} onClick={()=>{navigate("/addstudents")}} >
+        <ListItem disablePadding sx={{ display: 'block' }} onClick={()=>{navigate("/admin/addstudents")}} >
               <ListItemButton
                 sx={{
                   minHeight: 48,
@@ -150,7 +150,7 @@ const Sidenav=()=> {
                 <ListItemText primary="Add Students" sx={{ opacity: open ? 1 : 0 }} />
               </ListItemButton>
             </ListItem>
-            <ListItem disablePadding sx={{ display: 'block' }} onClick={()=>{navigate("/totalstudents")}}>
+            <ListItem disablePadding sx={{ display: 'block' }} onClick={()=>{navigate("/admin/totalstudents")}}>
               <ListItemButton
                 sx={{
                   minHeight: 48,
