@@ -4,11 +4,11 @@ const app = express();
 const multer = require("multer");
 const path = require("path");
 const bodyparser = require("body-parser");
-const jwt = require('jsonwebtoken');
-const bcrypt = require('bcrypt');
+const jwt = require("jsonwebtoken");
+const bcrypt = require("bcrypt");
 const csv = require("csvtojson");
-const nodemailer = require('nodemailer');
-const crypto = require('crypto');
+const nodemailer = require("nodemailer");
+const crypto = require("crypto");
 const Admin = require("./db/Admin");
 const Addstd = require("./db/Addstd");
 const teacher = require("./db/Addteacher");
@@ -16,7 +16,7 @@ const User = require("./db/User");
 const Facultie = require("./db/Facultie");
 const Quiz = require("./db/Quizz");
 const Notice = require("./db/Notice");
-const OTP = require("./db/OTP")
+const OTP = require("./db/OTP");
 const pdfSchema = require("./db/TimeTable");
 const fs = require("fs");
 
@@ -39,7 +39,9 @@ app.post("/adminsignup", async (req, res) => {
     const { name, email, password } = req.body;
 
     if (!name || !email || !password) {
-      return res.status(400).json({ error: "Name, email, and password are required" });
+      return res
+        .status(400)
+        .json({ error: "Name, email, and password are required" });
     }
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -47,10 +49,12 @@ app.post("/adminsignup", async (req, res) => {
       return res.status(400).json({ error: "Invalid email format" });
     }
 
-    const passwordRegex = /^(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[^a-zA-Z0-9]).{8,}$/;
+    const passwordRegex =
+      /^(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[^a-zA-Z0-9]).{8,}$/;
     if (!passwordRegex.test(password)) {
       return res.status(400).json({
-        error: "Password must contain at least 8 characters, including at least one uppercase letter, one lowercase letter, one number, and one special character."
+        error:
+          "Password must contain at least 8 characters, including at least one uppercase letter, one lowercase letter, one number, and one special character.",
       });
     }
 
@@ -69,9 +73,11 @@ app.post("/adminsignup", async (req, res) => {
 
     const result = await admin.save();
 
-    res.status(201).json({ message: "Admin successfully registered", adminId: result._id });
+    res
+      .status(201)
+      .json({ message: "Admin successfully registered", adminId: result._id });
   } catch (error) {
-    console.error('Error signing up admin:', error);
+    console.error("Error signing up admin:", error);
     res.status(500).json({ error: "Internal Server Error" });
   }
 });
@@ -86,20 +92,22 @@ app.post("/adminlogin", async (req, res) => {
 
     const admin = await Admin.findOne({ email });
 
-    if (admin && await bcrypt.compare(password, admin.password)) {
-      const token = jwt.sign({ adminId: admin._id, email: admin.email }, 'your-secret-key', { expiresIn: '1h' });
+    if (admin && (await bcrypt.compare(password, admin.password))) {
+      const token = jwt.sign(
+        { adminId: admin._id, email: admin.email },
+        "your-secret-key",
+        { expiresIn: "1h" }
+      );
 
       res.json({ token, admin });
     } else {
       res.status(401).json({ error: "Invalid email or password" });
     }
   } catch (error) {
-    console.error('Error logging in admin:', error);
+    console.error("Error logging in admin:", error);
     res.status(500).json({ error: "Internal Server Error" });
   }
 });
-
-
 
 //Student Registration
 
@@ -136,7 +144,9 @@ app.post("/addstd", async (req, res) => {
       !alternatenumber ||
       !referalcode
     ) {
-      return res.status(400).json({ error: "Please fill in all the required fields" });
+      return res
+        .status(400)
+        .json({ error: "Please fill in all the required fields" });
     }
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -144,17 +154,21 @@ app.post("/addstd", async (req, res) => {
       return res.status(400).json({ error: "Invalid email format" });
     }
 
-    const passwordRegex = /^(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[^a-zA-Z0-9]).{8,}$/;
+    const passwordRegex =
+      /^(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[^a-zA-Z0-9]).{8,}$/;
     if (!passwordRegex.test(password)) {
       return res.status(400).json({
-        error: "Password must contain at least 8 characters, including at least one uppercase letter, one lowercase letter, one number, and one special character."
+        error:
+          "Password must contain at least 8 characters, including at least one uppercase letter, one lowercase letter, one number, and one special character.",
       });
     }
 
     const prestudent = await Addstd.findOne({ email });
 
     if (prestudent) {
-      return res.status(400).json({ error: "This email is already registered" });
+      return res
+        .status(400)
+        .json({ error: "This email is already registered" });
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -177,25 +191,25 @@ app.post("/addstd", async (req, res) => {
 
     await std.save();
 
-    res.status(201).json({ message: "Student successfully registered", studentId: std._id });
+    res
+      .status(201)
+      .json({ message: "Student successfully registered", studentId: std._id });
   } catch (error) {
-    console.error('Error registering student:', error);
+    console.error("Error registering student:", error);
     res.status(500).json({ error: "Internal Server Error" });
   }
 });
 
-  // Get Student Data
-  app.get("/getdata", async (req, res) => {
-    try {
-      // Retrieve data without any authentication or validation
-      const std = await Addstd.find();
-      res.json("Student Details Found Successfully",std);
-    } catch (error) {
-      res.status(500).json({ error: "Internal Server Error" });
-    }
-  });
-  
-
+// Get Student Data
+app.get("/getdata", async (req, res) => {
+  try {
+    // Retrieve data without any authentication or validation
+    const std = await Addstd.find();
+    res.json("Student Details Found Successfully", std);
+  } catch (error) {
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
 
 // Student Profile View
 app.get("/getuser/:id", async (req, res) => {
@@ -204,7 +218,7 @@ app.get("/getuser/:id", async (req, res) => {
     const { id } = req.params;
 
     const userindividual = await Addstd.findById({ _id: id });
-    res.json("Student Profile Fetched Successfully",userindividual);
+    res.json("Student Profile Fetched Successfully", userindividual);
   } catch (error) {
     res.json(error);
   }
@@ -221,8 +235,9 @@ app.patch("/updateuser/:id", async (req, res) => {
       return res.status(404).json({ error: "User not found" });
     }
 
-    const isDataChanged = !Object.keys(req.body).every(key =>
-      JSON.stringify(existingUser[key]) === JSON.stringify(req.body[key])
+    const isDataChanged = !Object.keys(req.body).every(
+      (key) =>
+        JSON.stringify(existingUser[key]) === JSON.stringify(req.body[key])
     );
 
     if (!isDataChanged) {
@@ -237,10 +252,12 @@ app.patch("/updateuser/:id", async (req, res) => {
     }
 
     if (req.body.password) {
-      const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+      const passwordRegex =
+        /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
       if (!passwordRegex.test(req.body.password)) {
         return res.status(400).json({
-          error: "Invalid password format. Password must be at least 8 characters long and contain at least one lowercase letter, one uppercase letter, one number, and one special character.",
+          error:
+            "Invalid password format. Password must be at least 8 characters long and contain at least one lowercase letter, one uppercase letter, one number, and one special character.",
         });
       }
 
@@ -273,7 +290,6 @@ app.delete("/delete-student/:id", async (req, res) => {
   }
 });
 
-
 // Add Faculty
 app.post("/addfaculty", async (req, res) => {
   const {
@@ -296,10 +312,12 @@ app.post("/addfaculty", async (req, res) => {
     return res.status(400).json({ error: "Invalid email format" });
   }
 
-  const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+  const passwordRegex =
+    /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
   if (!passwordRegex.test(password)) {
     return res.status(400).json({
-      error: "Invalid password format. Password must be at least 8 characters long and contain at least one lowercase letter, one uppercase letter, one number, and one special character.",
+      error:
+        "Invalid password format. Password must be at least 8 characters long and contain at least one lowercase letter, one uppercase letter, one number, and one special character.",
     });
   }
 
@@ -316,7 +334,7 @@ app.post("/addfaculty", async (req, res) => {
     alternatenumber,
   ];
 
-  if (requiredFields.some(field => !field)) {
+  if (requiredFields.some((field) => !field)) {
     return res.status(400).json("Please fill in all required form data");
   }
 
@@ -360,12 +378,14 @@ app.get("/getfaculty", async (req, res) => {
       return res.json({ message: "No faculty members found" });
     }
 
-    res.json({ message: "Faculty information retrieved successfully", data: facultydata });
+    res.json({
+      message: "Faculty information retrieved successfully",
+      data: facultydata,
+    });
   } catch (error) {
     res.status(500).json({ error: "Internal Server Error" });
   }
 });
-
 
 //get faculty view
 app.get("/facultyview/:id", async (req, res) => {
@@ -377,12 +397,14 @@ app.get("/facultyview/:id", async (req, res) => {
       return res.status(404).json({ error: "Faculty not found" });
     }
 
-    res.json({ message: "Faculty information retrieved successfully", data: facultyview });
+    res.json({
+      message: "Faculty information retrieved successfully",
+      data: facultyview,
+    });
   } catch (error) {
     res.status(500).json({ error: "Internal Server Error" });
   }
 });
-
 
 //uodate faculty data
 app.patch("/updatefaculty/:id", async (req, res) => {
@@ -397,10 +419,12 @@ app.patch("/updatefaculty/:id", async (req, res) => {
 
     // Validate password format
     if (req.body.password) {
-      const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+      const passwordRegex =
+        /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
       if (!passwordRegex.test(req.body.password)) {
         return res.status(400).json({
-          error: "Invalid password format. Password must be at least 8 characters long and contain at least one lowercase letter, one uppercase letter, one number, and one special character.",
+          error:
+            "Invalid password format. Password must be at least 8 characters long and contain at least one lowercase letter, one uppercase letter, one number, and one special character.",
         });
       }
       // Hash the new password before updating
@@ -410,7 +434,7 @@ app.patch("/updatefaculty/:id", async (req, res) => {
     const updatefaculty = await teacher.findByIdAndUpdate(id, req.body, {
       new: true,
     });
-    
+
     if (!updatefaculty) {
       return res.status(404).json({ error: "Faculty not found" });
     }
@@ -427,9 +451,11 @@ app.delete("/deletefaculty/:id", async (req, res) => {
     const { id } = req.params;
 
     const deletefaculty = await teacher.findByIdAndDelete({ _id: id });
-    
+
     if (!deletefaculty) {
-      return res.status(404).json({ error: "Faculty not found. Deletion unsuccessful" });
+      return res
+        .status(404)
+        .json({ error: "Faculty not found. Deletion unsuccessful" });
     }
 
     res.json({ message: "Faculty Deleted Successfully" });
@@ -475,10 +501,12 @@ app.post("/facultylogin", async (req, res) => {
       return res.status(400).json({ error: "Invalid email format" });
     }
 
-    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+    const passwordRegex =
+      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
     if (!password || !passwordRegex.test(password)) {
       return res.status(400).json({
-        error: "Invalid password format. Password must be at least 8 characters long and contain at least one lowercase letter, one uppercase letter, one number, and one special character.",
+        error:
+          "Invalid password format. Password must be at least 8 characters long and contain at least one lowercase letter, one uppercase letter, one number, and one special character.",
       });
     }
 
@@ -496,11 +524,10 @@ app.post("/facultylogin", async (req, res) => {
       return res.status(404).json({ error: "Faculty not found" });
     }
   } catch (error) {
-    console.error('Error during faculty login:', error);
+    console.error("Error during faculty login:", error);
     res.status(500).json({ error: "Internal Server Error" });
   }
 });
-
 
 app.post("/addquiz", async (req, res) => {
   try {
@@ -582,14 +609,14 @@ app.delete("/quizzes/:quizId", async (req, res) => {
   }
 });
 
-app.post('/submitquiz/:quizId', async (req, res) => {
+app.post("/submitquiz/:quizId", async (req, res) => {
   const quizId = req.params.quizId;
   const submittedAnswers = req.body.answers;
-  const userId = req.body.userId; 
+  const userId = req.body.userId;
   try {
     const quiz = await Quiz.findById(quizId);
     if (!quiz) {
-      return res.status(404).send('Quiz not found');
+      return res.status(404).send("Quiz not found");
     }
 
     let score = 0;
@@ -604,12 +631,10 @@ app.post('/submitquiz/:quizId', async (req, res) => {
 
     res.json({ score });
   } catch (error) {
-    console.error('Error submitting quiz:', error);
-    res.status(500).send('Internal Server Error');
+    console.error("Error submitting quiz:", error);
+    res.status(500).send("Internal Server Error");
   }
 });
-
-
 
 // getnotice
 app.post("/getNotice", async (req, res) => {
@@ -785,13 +810,12 @@ app.get("/pdf/:id", async (req, res) => {
   }
 });
 
-
 // Forgot Password
 const transporter = nodemailer.createTransport({
-  service: 'gmail',
+  service: "gmail",
   auth: {
-    user: 'nandwana.utkarsh2003@gmail.com',
-    pass: 'kojc hlhu bhig mcxg',
+    user: "nandwana.utkarsh2003@gmail.com",
+    pass: "kojc hlhu bhig mcxg",
   },
 });
 
@@ -801,12 +825,13 @@ const generateOTP = () => {
 
 function isValidPassword(password) {
   // Password must have 8 characters, one special character, one uppercase, and one lowercase
-  const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+  const passwordRegex =
+    /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
   return passwordRegex.test(password);
 }
 
 // Endpoint for sending OTP and redirecting to change password
-app.post('/send-otp', async (req, res) => {
+app.post("/send-otp", async (req, res) => {
   const { email } = req.body;
 
   try {
@@ -816,28 +841,28 @@ app.post('/send-otp', async (req, res) => {
     const studentUser = await Addstd.findOne({ email });
 
     if (adminUser) {
-      role = 'admin';
+      role = "admin";
     } else if (facultyUser) {
-      role = 'faculty';
+      role = "faculty";
     } else if (studentUser) {
-      role = 'student';
+      role = "student";
     } else {
-      return res.status(404).json({ message: 'User not found.' });
+      return res.status(404).json({ message: "User not found." });
     }
 
     let user;
     switch (role) {
-      case 'admin':
+      case "admin":
         user = adminUser;
         break;
-      case 'faculty':
+      case "faculty":
         user = facultyUser;
         break;
-      case 'student':
+      case "student":
         user = studentUser;
         break;
       default:
-        return res.status(400).json({ message: 'Invalid role.' });
+        return res.status(400).json({ message: "Invalid role." });
     }
 
     const otp = generateOTP();
@@ -847,9 +872,9 @@ app.post('/send-otp', async (req, res) => {
     await OTP.create({ email, otp, expiration: new Date(otpExpiration) });
 
     const mailOptions = {
-      from: 'your_email@gmail.com',
+      from: "your_email@gmail.com",
       to: email,
-      subject: 'Verification OTP',
+      subject: "Verification OTP",
       text: `Your OTP for verification is: ${otp}`,
     };
 
@@ -859,51 +884,155 @@ app.post('/send-otp', async (req, res) => {
       }
     });
 
-    res.send('OTP sent to registered email');
+    res.send("OTP sent to registered email");
   } catch (error) {
-    res.status(500).json({ message: 'Internal Server Error.' });
+    res.status(500).json({ message: "Internal Server Error." });
   }
 });
 
-app.post('/change-password', async (req, res) => {
+app.post("/change-password", async (req, res) => {
   const { email, otp, newPassword } = req.body;
 
   try {
     // Look up the user in the database
-    const user = await Admin.findOne({ email }) || await teacher.findOne({ email }) || await Addstd.findOne({ email });
+    const user =
+      (await Admin.findOne({ email })) ||
+      (await teacher.findOne({ email })) ||
+      (await Addstd.findOne({ email }));
 
     if (!user) {
-      return res.status(404).json({ message: 'User not found.' });
+      return res.status(404).json({ message: "User not found." });
     }
 
     // Look up the OTP in the OTP collection
     const storedOTP = await OTP.findOne({ email, otp });
 
     if (!storedOTP || storedOTP.expiration < Date.now()) {
-      return res.status(400).json({ message: 'Invalid or expired OTP.' });
+      return res.status(400).json({ message: "Invalid or expired OTP." });
     }
-
-
 
     if (!isValidPassword(newPassword)) {
-      return res.status(400).json({ message: 'Invalid password. Please choose a password with at least 8 characters, one uppercase letter, one lowercase letter, one digit, and one special character.' });
+      return res
+        .status(400)
+        .json({
+          message:
+            "Invalid password. Please choose a password with at least 8 characters, one uppercase letter, one lowercase letter, one digit, and one special character.",
+        });
     }
-
 
     // Hash the new password
     const saltRounds = 10;
     const hashedPassword = await bcrypt.hash(newPassword, saltRounds);
 
-
     user.password = hashedPassword;
     await user.save();
 
-   // Clear the OTP data
-   await OTP.deleteOne({ email, otp });
+    // Clear the OTP data
+    await OTP.deleteOne({ email, otp });
 
-    res.json({ message: 'Password changed successfully.' });
+    res.json({ message: "Password changed successfully." });
   } catch (error) {
-    res.status(500).json({ message: 'Internal Server Error.' });
+    res.status(500).json({ message: "Internal Server Error." });
+  }
+});
+
+// admin change password
+app.post("/admin/changing-password", async (req, res) => {
+  const { email, oldPassword, newPassword } = req.body;
+
+  try {
+    // Retrieve the user from the database using the email
+    const user = await Admin.findOne({ email });
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Check if the old password matches the one in the database
+    const isPasswordValid = await bcrypt.compare(oldPassword, user.password);
+
+    if (!isPasswordValid) {
+      return res.status(401).json({ message: "Invalid old password" });
+    }
+    console.log(user.password)
+    // Hash the new password before saving it to the database
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    // Update the user's password in the database
+    user.password = hashedPassword;
+    await user.save();
+   
+
+    res.status(200).json({ message: "Password changed successfully" });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+});
+   //faculty change password
+app.post("/faculty/changing-password", async (req, res) => {
+  const { email, oldPassword, newPassword } = req.body;
+
+  try {
+    // Retrieve the user from the database using the email
+    const user = await Facultie.findOne({ email });
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Check if the old password matches the one in the database
+    const isPasswordValid = await bcrypt.compare(oldPassword, user.password);
+
+    if (!isPasswordValid) {
+      return res.status(401).json({ message: "Invalid old password" });
+    }
+    console.log(user.password)
+    // Hash the new password before saving it to the database
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    // Update the user's password in the database
+    user.password = hashedPassword;
+    await user.save();
+   
+
+    res.status(200).json({ message: "Password changed successfully" });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+});
+     //student change password
+app.post("/student/changing-password", async (req, res) => {
+  const { email, oldPassword, newPassword } = req.body;
+
+  try {
+    // Retrieve the user from the database using the email
+    const user = await Addstd.findOne({ email });
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Check if the old password matches the one in the database
+    const isPasswordValid = await bcrypt.compare(oldPassword, user.password);
+
+    if (!isPasswordValid) {
+      return res.status(401).json({ message: "Invalid old password" });
+    }
+    console.log(user.password)
+    // Hash the new password before saving it to the database
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    // Update the user's password in the database
+    user.password = hashedPassword;
+    await user.save();
+   
+
+    res.status(200).json({ message: "Password changed successfully" });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Internal Server Error" });
   }
 });
 
@@ -911,3 +1040,4 @@ app.post('/change-password', async (req, res) => {
 app.listen(port, () => {
   console.log(`Server running on port ${port}`);
 });
+` `
