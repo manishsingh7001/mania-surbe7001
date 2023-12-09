@@ -13,7 +13,14 @@ const TeacherSchema = new mongoose.Schema({
     gender: String,
     courses:  String,
     contactnumber: Number,
-    alternatenumber:  Number
+    alternatenumber:  Number,
+    otp: String,
+    otpExpiration: Date,
+    role: {
+        type: String,
+        enum: ['faculty'],
+        default: 'faculty'
+      }
     
     
 },
