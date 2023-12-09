@@ -10,10 +10,7 @@ const AdminSignup = () => {
 
     useEffect(()=>{
         const auth = localStorage.getItem('admin');
-        // if(auth)
-        // {
-        //     // navigate('/Admin')
-        // }
+
     })
 
     const collectData = async () => {

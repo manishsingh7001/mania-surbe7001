@@ -13,7 +13,14 @@ const StdSchema = new mongoose.Schema({
     courses:  String,
     contactnumber: Number,
     alternatenumber:  Number,
-    referalcode: String
+    referalcode: String,
+    otp: String,
+    otpExpiration: Date,
+    role: {
+        type: String,
+        enum: ['student'],
+        default: 'student'
+      }
     
 },
 {timestamps:true}

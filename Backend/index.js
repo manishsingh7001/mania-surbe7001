@@ -7,6 +7,8 @@ const bodyparser = require("body-parser");
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
 const csv = require("csvtojson");
+const nodemailer = require('nodemailer');
+const crypto = require('crypto');
 const Admin = require("./db/Admin");
 const Addstd = require("./db/Addstd");
 const teacher = require("./db/Addteacher");
@@ -14,6 +16,7 @@ const User = require("./db/User");
 const Facultie = require("./db/Facultie");
 const Quiz = require("./db/Quizz");
 const Notice = require("./db/Notice");
+const OTP = require("./db/OTP")
 const pdfSchema = require("./db/TimeTable");
 const fs = require("fs");
 
@@ -463,28 +466,49 @@ app.post("/facultysignup", async (req, res) => {
 });
 
 //faculty login
-app.get("/facultylogin", async (req, res) => {
-  let faculty = await Facultie.findOne(req.body);
-  if (req.body.email && req.body.password) {
-    if (faculty) {
-      res.send(faculty);
-    } else {
-      res.send({ result: "No Match Found" });
+app.post("/facultylogin", async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!email || !emailRegex.test(email)) {
+      return res.status(400).json({ error: "Invalid email format" });
     }
-  } else {
-    res.send({ result: "No Match Found" });
+
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+    if (!password || !passwordRegex.test(password)) {
+      return res.status(400).json({
+        error: "Invalid password format. Password must be at least 8 characters long and contain at least one lowercase letter, one uppercase letter, one number, and one special character.",
+      });
+    }
+
+    const faculty = await teacher.findOne({ email });
+
+    if (faculty) {
+      const passwordMatch = await bcrypt.compare(password, faculty.password);
+
+      if (passwordMatch) {
+        return res.json({ message: "Login successful", faculty });
+      } else {
+        return res.status(401).json({ error: "Incorrect password" });
+      }
+    } else {
+      return res.status(404).json({ error: "Faculty not found" });
+    }
+  } catch (error) {
+    console.error('Error during faculty login:', error);
+    res.status(500).json({ error: "Internal Server Error" });
   }
 });
 
+
 app.post("/addquiz", async (req, res) => {
   try {
-    // Create a new Quiz instance
     const newQuiz = new Quiz({
       title: req.body.title,
       questions: req.body.questions,
     });
 
-    // Save the quiz to the database
     const result = await newQuiz.save();
 
     res.send(result);
@@ -561,16 +585,13 @@ app.delete("/quizzes/:quizId", async (req, res) => {
 app.post('/submitquiz/:quizId', async (req, res) => {
   const quizId = req.params.quizId;
   const submittedAnswers = req.body.answers;
-  const userId = req.body.userId; // Assuming you're sending the user ID in the request body
-
+  const userId = req.body.userId; 
   try {
-    // Fetch the quiz from the database
     const quiz = await Quiz.findById(quizId);
     if (!quiz) {
       return res.status(404).send('Quiz not found');
     }
 
-    // Calculate the score
     let score = 0;
     quiz.questions.forEach((question, index) => {
       if (submittedAnswers[index] === question.correctOptionIndex) {
@@ -578,7 +599,6 @@ app.post('/submitquiz/:quizId', async (req, res) => {
       }
     });
 
-    // Save the score to the database
     quiz.scores.push({ userId, score });
     await quiz.save();
 
@@ -590,7 +610,6 @@ app.post('/submitquiz/:quizId', async (req, res) => {
 });
 
 
-//Notice api
 
 // getnotice
 app.post("/getNotice", async (req, res) => {
@@ -765,6 +784,129 @@ app.get("/pdf/:id", async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
+
+
+// Forgot Password
+const transporter = nodemailer.createTransport({
+  service: 'gmail',
+  auth: {
+    user: 'nandwana.utkarsh2003@gmail.com',
+    pass: 'kojc hlhu bhig mcxg',
+  },
+});
+
+const generateOTP = () => {
+  return Math.floor(100000 + Math.random() * 900000).toString();
+};
+
+function isValidPassword(password) {
+  // Password must have 8 characters, one special character, one uppercase, and one lowercase
+  const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+  return passwordRegex.test(password);
+}
+
+// Endpoint for sending OTP and redirecting to change password
+app.post('/send-otp', async (req, res) => {
+  const { email } = req.body;
+
+  try {
+    // Look up the user in the database to get the role
+    const adminUser = await Admin.findOne({ email });
+    const facultyUser = await teacher.findOne({ email });
+    const studentUser = await Addstd.findOne({ email });
+
+    if (adminUser) {
+      role = 'admin';
+    } else if (facultyUser) {
+      role = 'faculty';
+    } else if (studentUser) {
+      role = 'student';
+    } else {
+      return res.status(404).json({ message: 'User not found.' });
+    }
+
+    let user;
+    switch (role) {
+      case 'admin':
+        user = adminUser;
+        break;
+      case 'faculty':
+        user = facultyUser;
+        break;
+      case 'student':
+        user = studentUser;
+        break;
+      default:
+        return res.status(400).json({ message: 'Invalid role.' });
+    }
+
+    const otp = generateOTP();
+    const otpExpiration = Date.now() + 300000; // OTP expires in 5 minutes
+
+    // Save OTP to the OTP collection
+    await OTP.create({ email, otp, expiration: new Date(otpExpiration) });
+
+    const mailOptions = {
+      from: 'your_email@gmail.com',
+      to: email,
+      subject: 'Verification OTP',
+      text: `Your OTP for verification is: ${otp}`,
+    };
+
+    transporter.sendMail(mailOptions, (error, info) => {
+      if (error) {
+        return console.log(error);
+      }
+    });
+
+    res.send('OTP sent to registered email');
+  } catch (error) {
+    res.status(500).json({ message: 'Internal Server Error.' });
+  }
+});
+
+app.post('/change-password', async (req, res) => {
+  const { email, otp, newPassword } = req.body;
+
+  try {
+    // Look up the user in the database
+    const user = await Admin.findOne({ email }) || await teacher.findOne({ email }) || await Addstd.findOne({ email });
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found.' });
+    }
+
+    // Look up the OTP in the OTP collection
+    const storedOTP = await OTP.findOne({ email, otp });
+
+    if (!storedOTP || storedOTP.expiration < Date.now()) {
+      return res.status(400).json({ message: 'Invalid or expired OTP.' });
+    }
+
+
+
+    if (!isValidPassword(newPassword)) {
+      return res.status(400).json({ message: 'Invalid password. Please choose a password with at least 8 characters, one uppercase letter, one lowercase letter, one digit, and one special character.' });
+    }
+
+
+    // Hash the new password
+    const saltRounds = 10;
+    const hashedPassword = await bcrypt.hash(newPassword, saltRounds);
+
+
+    user.password = hashedPassword;
+    await user.save();
+
+   // Clear the OTP data
+   await OTP.deleteOne({ email, otp });
+
+    res.json({ message: 'Password changed successfully.' });
+  } catch (error) {
+    res.status(500).json({ message: 'Internal Server Error.' });
+  }
+});
+
 
 app.listen(port, () => {
   console.log(`Server running on port ${port}`);
