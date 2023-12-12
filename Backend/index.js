@@ -19,6 +19,7 @@ const Notice = require("./db/Notice");
 const OTP = require("./db/OTP");
 const pdfSchema = require("./db/TimeTable");
 const fs = require("fs");
+const Auth = require("./middleware/auth")
 
 const port = 5000;
 // const { body, validationResult } = require("express-validator");
@@ -95,7 +96,7 @@ app.post("/adminlogin", async (req, res) => {
     if (admin && (await bcrypt.compare(password, admin.password))) {
       const token = jwt.sign(
         { adminId: admin._id, email: admin.email },
-        "your-secret-key",
+        "regex",
         { expiresIn: "1h" }
       );
 
@@ -111,7 +112,7 @@ app.post("/adminlogin", async (req, res) => {
 
 //Student Registration
 
-app.post("/addstd", async (req, res) => {
+app.post("/addstd", Auth, async (req, res) => {
   const {
     firstname,
     lastname,
@@ -1040,4 +1041,3 @@ app.post("/student/changing-password", async (req, res) => {
 app.listen(port, () => {
   console.log(`Server running on port ${port}`);
 });
-` `

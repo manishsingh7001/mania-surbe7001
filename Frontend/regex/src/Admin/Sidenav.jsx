@@ -1,4 +1,5 @@
 import * as React from 'react';
+import { useEffect } from 'react';
 import { styled, useTheme } from '@mui/material/styles';
 import Box from '@mui/material/Box';
 import MuiDrawer from '@mui/material/Drawer';
@@ -91,6 +92,16 @@ const Sidenav=()=> {
   const theme = useTheme();
   const [open, setOpen] = React.useState(true);
   const navigate=useNavigate();
+
+
+
+  useEffect(() => {
+    const token = localStorage.getItem("adminToken");
+    if (!token) {
+      console.log("Token not found. Navigating to login.");
+      navigate("/admin/login");
+    }
+  });
 
 //   const handleDrawerOpen = () => {
 //     setOpen(true);
@@ -258,6 +269,13 @@ const Sidenav=()=> {
               <ListItemButton
                 sx={{
                   minHeight: 48,
+    useEffect(() => {
+      const token = localStorage.getItem("adminToken");
+      if (!token) {
+        console.log("Token not found. Navigating to login.");
+        navigate("/admin/login");
+      }
+    }, []);
                   justifyContent: open ? 'initial' : 'center',
                   px: 2.5,
                 }}
