@@ -16,11 +16,8 @@ const TeacherSchema = new mongoose.Schema({
     alternatenumber:  Number,
     otp: String,
     otpExpiration: Date,
-    role: {
-        type: String,
-        enum: ['faculty'],
-        default: 'faculty'
-      }
+    role: { type: String, enum: ['faculty'], default: 'faculty' },
+
     
     
 },
