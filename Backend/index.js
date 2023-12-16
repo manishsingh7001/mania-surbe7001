@@ -104,7 +104,7 @@ app.post("/adminlogin", async (req, res) => {
       res.status(401).json({ error: "Invalid email or password" });
     }
   } catch (error) {
-    console.error("Error logging in admin:", error);
+    console.error("Error logging in student:", error);
     res.status(500).json({ error: "Internal Server Error" });
   }
 });
