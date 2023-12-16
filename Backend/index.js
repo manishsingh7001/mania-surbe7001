@@ -19,7 +19,8 @@ const Notice = require("./db/Notice");
 const OTP = require("./db/OTP");
 const pdfSchema = require("./db/TimeTable");
 const fs = require("fs");
-const Auth = require("./middleware/auth")
+const Auth = require("./middleware/Authentication");
+const checkRole = require("./middleware/Authorization");
 
 const port = 5000;
 // const { body, validationResult } = require("express-validator");
@@ -94,11 +95,9 @@ app.post("/adminlogin", async (req, res) => {
     const admin = await Admin.findOne({ email });
 
     if (admin && (await bcrypt.compare(password, admin.password))) {
-      const token = jwt.sign(
-        { adminId: admin._id, email: admin.email },
-        "regex",
-        { expiresIn: "1h" }
-      );
+      const token = jwt.sign({ _id: admin._id, email: admin.email }, "regex", {
+        expiresIn: "1h",
+      });
 
       res.json({ token, admin });
     } else {
@@ -112,7 +111,7 @@ app.post("/adminlogin", async (req, res) => {
 
 //Student Registration
 
-app.post("/addstd", Auth, async (req, res) => {
+app.post("/addstd", Auth, checkRole(["admin"]), async (req, res) => {
   const {
     firstname,
     lastname,
@@ -202,7 +201,7 @@ app.post("/addstd", Auth, async (req, res) => {
 });
 
 // Get Student Data
-app.get("/getdata", async (req, res) => {
+app.get("/getdata", Auth, checkRole(["admin"]), async (req, res) => {
   try {
     // Retrieve data without any authentication or validation
     const std = await Addstd.find();
@@ -213,20 +212,25 @@ app.get("/getdata", async (req, res) => {
 });
 
 // Student Profile View
-app.get("/getuser/:id", async (req, res) => {
-  try {
-    console.log(req.params);
-    const { id } = req.params;
+app.get(
+  "/getuser/:id",
+  Auth,
+  checkRole(["admin", "faculty", "student"]),
+  async (req, res) => {
+    try {
+      console.log(req.params);
+      const { id } = req.params;
 
-    const userindividual = await Addstd.findById({ _id: id });
-    res.json("Student Profile Fetched Successfully", userindividual);
-  } catch (error) {
-    res.json(error);
+      const userindividual = await Addstd.findById({ _id: id });
+      res.json("Student Profile Fetched Successfully", userindividual);
+    } catch (error) {
+      res.json(error);
+    }
   }
-});
+);
 
 // Update User
-app.patch("/updateuser/:id", async (req, res) => {
+app.patch("/updateuser/:id", Auth, checkRole(["admin"]), async (req, res) => {
   try {
     const { id } = req.params;
 
@@ -276,23 +280,28 @@ app.patch("/updateuser/:id", async (req, res) => {
 });
 
 // Delete Student
-app.delete("/delete-student/:id", async (req, res) => {
-  try {
-    const { id } = req.params;
-    const deletedStudent = await Addstd.findByIdAndDelete({ _id: id });
+app.delete(
+  "/delete-student/:id",
+  Auth,
+  checkRole(["admin"]),
+  async (req, res) => {
+    try {
+      const { id } = req.params;
+      const deletedStudent = await Addstd.findByIdAndDelete({ _id: id });
 
-    if (deletedStudent) {
-      res.json({ message: `Student with ID ${id} successfully deleted` });
-    } else {
-      res.status(404).json({ error: `Student with ID ${id} not found` });
+      if (deletedStudent) {
+        res.json({ message: `Student with ID ${id} successfully deleted` });
+      } else {
+        res.status(404).json({ error: `Student with ID ${id} not found` });
+      }
+    } catch (error) {
+      res.status(500).json({ error: "Internal Server Error" });
     }
-  } catch (error) {
-    res.status(500).json({ error: "Internal Server Error" });
   }
-});
+);
 
 // Add Faculty
-app.post("/addfaculty", async (req, res) => {
+app.post("/addfaculty", Auth, checkRole(["admin"]), async (req, res) => {
   const {
     firstname,
     lastname,
@@ -371,7 +380,7 @@ app.post("/addfaculty", async (req, res) => {
 });
 
 //get faculty data
-app.get("/getfaculty", async (req, res) => {
+app.get("/getfaculty", Auth, checkRole(["admin"]), async (req, res) => {
   try {
     const facultydata = await teacher.find();
 
@@ -389,107 +398,132 @@ app.get("/getfaculty", async (req, res) => {
 });
 
 //get faculty view
-app.get("/facultyview/:id", async (req, res) => {
-  try {
-    const { id } = req.params;
-    const facultyview = await teacher.findById({ _id: id });
+app.get(
+  "/facultyview/:id",
+  Auth,
+  checkRole(["admin", "faculty", "student"]),
+  async (req, res) => {
+    try {
+      const { id } = req.params;
+      const facultyview = await teacher.findById({ _id: id });
 
-    if (!facultyview) {
-      return res.status(404).json({ error: "Faculty not found" });
+      if (!facultyview) {
+        return res.status(404).json({ error: "Faculty not found" });
+      }
+
+      res.json({
+        message: "Faculty information retrieved successfully",
+        data: facultyview,
+      });
+    } catch (error) {
+      res.status(500).json({ error: "Internal Server Error" });
     }
-
-    res.json({
-      message: "Faculty information retrieved successfully",
-      data: facultyview,
-    });
-  } catch (error) {
-    res.status(500).json({ error: "Internal Server Error" });
   }
-});
+);
 
 //uodate faculty data
-app.patch("/updatefaculty/:id", async (req, res) => {
-  try {
-    const { id } = req.params;
+app.patch(
+  "/updatefaculty/:id",
+  Auth,
+  checkRole(["admin"]),
+  async (req, res) => {
+    try {
+      const { id } = req.params;
 
-    // Validate email format
+      // Validate email format
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (req.body.email && !emailRegex.test(req.body.email)) {
+        return res.status(400).json({ error: "Invalid email format" });
+      }
+
+      // Validate password format
+      if (req.body.password) {
+        const passwordRegex =
+          /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+        if (!passwordRegex.test(req.body.password)) {
+          return res.status(400).json({
+            error:
+              "Invalid password format. Password must be at least 8 characters long and contain at least one lowercase letter, one uppercase letter, one number, and one special character.",
+          });
+        }
+        // Hash the new password before updating
+        req.body.password = await bcrypt.hash(req.body.password, 10);
+      }
+
+      const updatefaculty = await teacher.findByIdAndUpdate(id, req.body, {
+        new: true,
+      });
+
+      if (!updatefaculty) {
+        return res.status(404).json({ error: "Faculty not found" });
+      }
+
+      res.json(updatefaculty);
+    } catch (error) {
+      res.status(500).json(error);
+    }
+  }
+);
+
+//delete faculty data
+app.delete(
+  "/deletefaculty/:id",
+  Auth,
+  checkRole(["admin"]),
+  async (req, res) => {
+    try {
+      const { id } = req.params;
+
+      const deletefaculty = await teacher.findByIdAndDelete({ _id: id });
+
+      if (!deletefaculty) {
+        return res
+          .status(404)
+          .json({ error: "Faculty not found. Deletion unsuccessful" });
+      }
+
+      res.json({ message: "Faculty Deleted Successfully" });
+    } catch (error) {
+      res.status(500).json(error);
+    }
+  }
+);
+//user Login
+app.get("/userlogin", async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (req.body.email && !emailRegex.test(req.body.email)) {
+    if (!email || !emailRegex.test(email)) {
       return res.status(400).json({ error: "Invalid email format" });
     }
 
-    // Validate password format
-    if (req.body.password) {
-      const passwordRegex =
-        /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
-      if (!passwordRegex.test(req.body.password)) {
-        return res.status(400).json({
-          error:
-            "Invalid password format. Password must be at least 8 characters long and contain at least one lowercase letter, one uppercase letter, one number, and one special character.",
-        });
-      }
-      // Hash the new password before updating
-      req.body.password = await bcrypt.hash(req.body.password, 10);
+    const passwordRegex =
+      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+    if (!password || !passwordRegex.test(password)) {
+      return res.status(400).json({
+        error:
+          "Invalid password format. Password must be at least 8 characters long and contain at least one lowercase letter, one uppercase letter, one number, and one special character.",
+      });
     }
 
-    const updatefaculty = await teacher.findByIdAndUpdate(id, req.body, {
-      new: true,
-    });
+    const student = await Addstd.findOne({ email });
 
-    if (!updatefaculty) {
+    if (student && (await bcrypt.compare(password, student.password))) {
+      const token = jwt.sign(
+        { _id: student._id, email: student.email },
+        "regex",
+        { expiresIn: "1h" }
+      );
+
+      res.json({ token, student });
+    } else {
       return res.status(404).json({ error: "Faculty not found" });
     }
-
-    res.json(updatefaculty);
   } catch (error) {
-    res.status(500).json(error);
+    console.error("Error during faculty login:", error);
+    res.status(500).json({ error: "Internal Server Error" });
   }
-});
-
-//delete faculty data
-app.delete("/deletefaculty/:id", async (req, res) => {
-  try {
-    const { id } = req.params;
-
-    const deletefaculty = await teacher.findByIdAndDelete({ _id: id });
-
-    if (!deletefaculty) {
-      return res
-        .status(404)
-        .json({ error: "Faculty not found. Deletion unsuccessful" });
-    }
-
-    res.json({ message: "Faculty Deleted Successfully" });
-  } catch (error) {
-    res.status(500).json(error);
-  }
-});
-// user signup
-app.post("/usersignup", async (req, res) => {
-  let user = new User(req.body);
-  let result = await user.save();
-  res.send(result);
-});
-
-//user Login
-app.get("/userlogin", async (req, res) => {
-  let user = await User.findOne(req.body);
-  if (req.body.email && req.body.password) {
-    if (user) {
-      res.send(user);
-    } else {
-      res.send({ result: "No Match Found" });
-    }
-  } else {
-    res.send({ result: "No Match Found" });
-  }
-});
-
-//faculty Signup
-app.post("/facultysignup", async (req, res) => {
-  let faculty = new Facultie(req.body);
-  let result = await faculty.save();
-  res.send(result);
 });
 
 //faculty login
@@ -513,14 +547,14 @@ app.post("/facultylogin", async (req, res) => {
 
     const faculty = await teacher.findOne({ email });
 
-    if (faculty) {
-      const passwordMatch = await bcrypt.compare(password, faculty.password);
+    if (faculty && (await bcrypt.compare(password, faculty.password))) {
+      const token = jwt.sign(
+        { _id: faculty._id, email: faculty.email },
+        "regex",
+        { expiresIn: "1h" }
+      );
 
-      if (passwordMatch) {
-        return res.json({ message: "Login successful", faculty });
-      } else {
-        return res.status(401).json({ error: "Incorrect password" });
-      }
+      res.json({ token, faculty });
     } else {
       return res.status(404).json({ error: "Faculty not found" });
     }
@@ -530,129 +564,168 @@ app.post("/facultylogin", async (req, res) => {
   }
 });
 
-app.post("/addquiz", async (req, res) => {
-  try {
-    const newQuiz = new Quiz({
-      title: req.body.title,
-      questions: req.body.questions,
-    });
+app.post(
+  "/addquiz",
+  Auth,
+  checkRole(["admin", "faculty"]),
+  async (req, res) => {
+    try {
+      const newQuiz = new Quiz({
+        title: req.body.title,
+        questions: req.body.questions,
+      });
 
-    const result = await newQuiz.save();
+      const result = await newQuiz.save();
 
-    res.send(result);
-  } catch (error) {
-    console.error(error);
-    res.status(500).send("Internal Server Error");
+      res.send(result);
+    } catch (error) {
+      console.error(error);
+      res.status(500).send("Internal Server Error");
+    }
   }
-});
+);
 
 // Endpoint to get all quizzes
-app.get("/quizzes", async (req, res) => {
-  try {
-    const quizzes = await Quiz.find();
-    res.json(quizzes);
-  } catch (error) {
-    console.error("Error fetching quizzes:", error);
-    res.status(500).send("Internal Server Error");
+app.get(
+  "/quizzes",
+  Auth,
+  checkRole(["admin", "faculty", "student"]),
+  async (req, res) => {
+    try {
+      const quizzes = await Quiz.find();
+      res.json(quizzes);
+    } catch (error) {
+      console.error("Error fetching quizzes:", error);
+      res.status(500).send("Internal Server Error");
+    }
   }
-});
+);
 
 // Endpoint to get a quiz by ID
-app.get("/quizzes/:quizId", async (req, res) => {
-  const quizId = req.params.quizId;
+app.get(
+  "/quizzes/:quizId",
+  Auth,
+  checkRole(["admin", "faculty", "student"]),
+  async (req, res) => {
+    const quizId = req.params.quizId;
 
-  try {
-    const quiz = await Quiz.findById(quizId);
-    if (!quiz) {
-      return res.status(404).send("Quiz not found");
+    try {
+      const quiz = await Quiz.findById(quizId);
+      if (!quiz) {
+        return res.status(404).send("Quiz not found");
+      }
+
+      res.json(quiz);
+    } catch (error) {
+      console.error("Error fetching quiz by ID:", error);
+      res.status(500).send("Internal Server Error");
     }
-
-    res.json(quiz);
-  } catch (error) {
-    console.error("Error fetching quiz by ID:", error);
-    res.status(500).send("Internal Server Error");
   }
-});
+);
 
 // Endpoint to update a quiz by ID
-app.put("/quizzes/:quizId", async (req, res) => {
-  const quizId = req.params.quizId;
+app.put(
+  "/quizzes/:quizId",
+  Auth,
+  checkRole(["admin", "faculty"]),
+  async (req, res) => {
+    const quizId = req.params.quizId;
 
-  try {
-    const updatedQuiz = await Quiz.findByIdAndUpdate(quizId, req.body, {
-      new: true,
-    });
-    if (!updatedQuiz) {
-      return res.status(404).send("Quiz not found");
+    try {
+      const updatedQuiz = await Quiz.findByIdAndUpdate(quizId, req.body, {
+        new: true,
+      });
+      if (!updatedQuiz) {
+        return res.status(404).send("Quiz not found");
+      }
+
+      res.json(updatedQuiz);
+    } catch (error) {
+      console.error("Error updating quiz by ID:", error);
+      res.status(500).send("Internal Server Error");
     }
-
-    res.json(updatedQuiz);
-  } catch (error) {
-    console.error("Error updating quiz by ID:", error);
-    res.status(500).send("Internal Server Error");
   }
-});
+);
 
 // Endpoint to delete a quiz by ID
-app.delete("/quizzes/:quizId", async (req, res) => {
-  const quizId = req.params.quizId;
+app.delete(
+  "/quizzes/:quizId",
+  Auth,
+  checkRole(["admin", "faculty"]),
+  async (req, res) => {
+    const quizId = req.params.quizId;
 
-  try {
-    const deletedQuiz = await Quiz.findByIdAndDelete(quizId);
-    if (!deletedQuiz) {
-      return res.status(404).send("Quiz not found");
-    }
-
-    res.json({ message: "Quiz deleted successfully" });
-  } catch (error) {
-    console.error("Error deleting quiz by ID:", error);
-    res.status(500).send("Internal Server Error");
-  }
-});
-
-app.post("/submitquiz/:quizId", async (req, res) => {
-  const quizId = req.params.quizId;
-  const submittedAnswers = req.body.answers;
-  const userId = req.body.userId;
-  try {
-    const quiz = await Quiz.findById(quizId);
-    if (!quiz) {
-      return res.status(404).send("Quiz not found");
-    }
-
-    let score = 0;
-    quiz.questions.forEach((question, index) => {
-      if (submittedAnswers[index] === question.correctOptionIndex) {
-        score++;
+    try {
+      const deletedQuiz = await Quiz.findByIdAndDelete(quizId);
+      if (!deletedQuiz) {
+        return res.status(404).send("Quiz not found");
       }
-    });
 
-    quiz.scores.push({ userId, score });
-    await quiz.save();
-
-    res.json({ score });
-  } catch (error) {
-    console.error("Error submitting quiz:", error);
-    res.status(500).send("Internal Server Error");
+      res.json({ message: "Quiz deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting quiz by ID:", error);
+      res.status(500).send("Internal Server Error");
+    }
   }
-});
+);
+
+app.post(
+  "/submitquiz/:quizId",
+  Auth,
+  checkRole(["admin", "faculty", "student"]),
+  async (req, res) => {
+    const quizId = req.params.quizId;
+    const submittedAnswers = req.body.answers;
+    const userId = req.body.userId;
+    try {
+      const quiz = await Quiz.findById(quizId);
+      if (!quiz) {
+        return res.status(404).send("Quiz not found");
+      }
+
+      let score = 0;
+      quiz.questions.forEach((question, index) => {
+        if (submittedAnswers[index] === question.correctOptionIndex) {
+          score++;
+        }
+      });
+
+      quiz.scores.push({ userId, score });
+      await quiz.save();
+
+      res.json({ score });
+    } catch (error) {
+      console.error("Error submitting quiz:", error);
+      res.status(500).send("Internal Server Error");
+    }
+  }
+);
 
 // getnotice
-app.post("/getNotice", async (req, res) => {
-  try {
-    let notice = await Notice.find(req.body);
-    if (notice) {
-      res.json({ success: true, message: "Notice Get Successfully", notice });
-    } else {
-      res.status(404).json({ success: false, message: "No Notice Available!" });
+app.post(
+  "/getNotice",
+  Auth,
+  checkRole(["admin", "faculty", "student"]),
+  async (req, res) => {
+    try {
+      let notice = await Notice.find(req.body);
+      if (notice) {
+        res.json({ success: true, message: "Notice Get Successfully", notice });
+      } else {
+        res
+          .status(404)
+          .json({ success: false, message: "No Notice Available!" });
+      }
+    } catch (error) {
+      res
+        .status(500)
+        .json({ success: false, message: "Internal Server Error" });
     }
-  } catch (error) {
-    res.status(500).json({ success: false, message: "Internal Server Error" });
   }
-});
+);
 
 // addnotice
-app.post("/addNotice", async (req, res) => {
+app.post("/addNotice", Auth, checkRole(["admin"]), async (req, res) => {
   let { link, description, title, type } = req.body;
   try {
     let notice = await Notice.findOne({ link, description, title, type });
@@ -678,7 +751,7 @@ app.post("/addNotice", async (req, res) => {
 });
 
 //updatenotice
-app.post("/updateNotice/:id", async (req, res) => {
+app.post("/updateNotice/:id", Auth, checkRole(["admin"]), async (req, res) => {
   let { link, description, title, type } = req.body;
   try {
     let notice = await Notice.findByIdAndUpdate(req.params.id, {
@@ -702,22 +775,29 @@ app.post("/updateNotice/:id", async (req, res) => {
 });
 
 //deletenotice
-app.delete("/deleteNotice/:id", async (req, res) => {
-  try {
-    let notice = await Notice.findByIdAndDelete(req.params.id);
-    if (!notice) {
-      return res
-        .status(400)
-        .json({ success: false, message: "No Notice Available!" });
+app.delete(
+  "/deleteNotice/:id",
+  Auth,
+  checkRole(["admin"]),
+  async (req, res) => {
+    try {
+      let notice = await Notice.findByIdAndDelete(req.params.id);
+      if (!notice) {
+        return res
+          .status(400)
+          .json({ success: false, message: "No Notice Available!" });
+      }
+      res.json({
+        success: true,
+        message: "Notice Deleted Successfully",
+      });
+    } catch (error) {
+      res
+        .status(500)
+        .json({ success: false, message: "Internal Server Error" });
     }
-    res.json({
-      success: true,
-      message: "Notice Deleted Successfully",
-    });
-  } catch (error) {
-    res.status(500).json({ success: false, message: "Internal Server Error" });
   }
-});
+);
 
 //upload csv file
 const storage = multer.diskStorage({
@@ -731,40 +811,46 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage: storage });
 
-app.post("/importCSV", upload.single("file"), async (req, res) => {
-  try {
-    const stdData = [];
+app.post(
+  "/importCSV",
+  Auth,
+  checkRole(["admin"]),
+  upload.single("file"),
+  async (req, res) => {
+    try {
+      const stdData = [];
 
-    csv()
-      .fromFile(req.file.path)
-      .then(async (response) => {
-        for (var x = 0; x < response.length; x++) {
-          stdData.push({
-            firstname: response[x].FirstName,
-            lastname: response[x].LastName,
-            email: response[x].Email,
-            password: response[x].Password,
-            currentaddress: response[x].CurrentAddress,
-            permanentaddress: response[x].PermanentAddress,
-            institutename: response[x].InstituteName,
-            highestqualification: response[x].HighestQualification,
-            gender: response[x].Gender,
-            courses: response[x].Courses,
-            contactnumber: response[x].ContactNumber,
-            alternatenumber: response[x].AlternateNumber,
-            referalcode: response[x].ReferalCode,
-          });
-        }
+      csv()
+        .fromFile(req.file.path)
+        .then(async (response) => {
+          for (var x = 0; x < response.length; x++) {
+            stdData.push({
+              firstname: response[x].FirstName,
+              lastname: response[x].LastName,
+              email: response[x].Email,
+              password: response[x].Password,
+              currentaddress: response[x].CurrentAddress,
+              permanentaddress: response[x].PermanentAddress,
+              institutename: response[x].InstituteName,
+              highestqualification: response[x].HighestQualification,
+              gender: response[x].Gender,
+              courses: response[x].Courses,
+              contactnumber: response[x].ContactNumber,
+              alternatenumber: response[x].AlternateNumber,
+              referalcode: response[x].ReferalCode,
+            });
+          }
 
-        await Addstd.insertMany(stdData);
-      });
-    res
-      .status(200)
-      .send({ success: true, message: "CSV uploaded successfully" });
-  } catch (error) {
-    res.status(400).send({ success: false, message: error.message });
+          await Addstd.insertMany(stdData);
+        });
+      res
+        .status(200)
+        .send({ success: true, message: "CSV uploaded successfully" });
+    } catch (error) {
+      res.status(400).send({ success: false, message: error.message });
+    }
   }
-});
+);
 
 // Set up multer storage for handling PDF uploads
 const storage1 = multer.diskStorage({
@@ -781,35 +867,46 @@ const storage1 = multer.diskStorage({
 // Create a multer instance for handling PDF uploads
 const upload1 = multer({ storage: storage1 });
 
-app.post("/upload-timetable", upload1.single("pdfFile"), async (req, res) => {
-  try {
-    const newPdf = new TimeTable({
-      filename: req.file.filename,
-      path: req.file.path,
-    });
+app.post(
+  "/upload-timetable",
+  Auth,
+  checkRole(["admin"]),
+  upload1.single("pdfFile"),
+  async (req, res) => {
+    try {
+      const newPdf = new TimeTable({
+        filename: req.file.filename,
+        path: req.file.path,
+      });
 
-    await newPdf.save();
-    res.json({ success: true, message: "PDF uploaded successfully" });
-  } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
-  }
-});
-
-app.get("/pdf/:id", async (req, res) => {
-  try {
-    const pdf = await TimeTable.findById(req.params.id);
-
-    if (!pdf) {
-      return res.status(404).json({ message: "PDF not found" });
+      await newPdf.save();
+      res.json({ success: true, message: "PDF uploaded successfully" });
+    } catch (error) {
+      res.status(500).json({ success: false, message: error.message });
     }
-
-    // Stream the PDF file to the client
-    const fileStream = fs.createReadStream(pdf.path);
-    fileStream.pipe(res);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
   }
-});
+);
+
+app.get(
+  "/pdf/:id",
+  Auth,
+  checkRole(["admin", "faculty", "student"]),
+  async (req, res) => {
+    try {
+      const pdf = await TimeTable.findById(req.params.id);
+
+      if (!pdf) {
+        return res.status(404).json({ message: "PDF not found" });
+      }
+
+      // Stream the PDF file to the client
+      const fileStream = fs.createReadStream(pdf.path);
+      fileStream.pipe(res);
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  }
+);
 
 // Forgot Password
 const transporter = nodemailer.createTransport({
@@ -913,12 +1010,10 @@ app.post("/change-password", async (req, res) => {
     }
 
     if (!isValidPassword(newPassword)) {
-      return res
-        .status(400)
-        .json({
-          message:
-            "Invalid password. Please choose a password with at least 8 characters, one uppercase letter, one lowercase letter, one digit, and one special character.",
-        });
+      return res.status(400).json({
+        message:
+          "Invalid password. Please choose a password with at least 8 characters, one uppercase letter, one lowercase letter, one digit, and one special character.",
+      });
     }
 
     // Hash the new password
@@ -938,105 +1033,116 @@ app.post("/change-password", async (req, res) => {
 });
 
 // admin change password
-app.post("/admin/changing-password", async (req, res) => {
-  const { email, oldPassword, newPassword } = req.body;
+app.post(
+  "/admin/changing-password",
+  Auth,
+  checkRole(["admin"]),
+  async (req, res) => {
+    const { email, oldPassword, newPassword } = req.body;
 
-  try {
-    // Retrieve the user from the database using the email
-    const user = await Admin.findOne({ email });
+    try {
+      // Retrieve the user from the database using the email
+      const user = await Admin.findOne({ email });
 
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      // Check if the old password matches the one in the database
+      const isPasswordValid = await bcrypt.compare(oldPassword, user.password);
+
+      if (!isPasswordValid) {
+        return res.status(401).json({ message: "Invalid old password" });
+      }
+      console.log(user.password);
+      // Hash the new password before saving it to the database
+      const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+      // Update the user's password in the database
+      user.password = hashedPassword;
+      await user.save();
+
+      res.status(200).json({ message: "Password changed successfully" });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ message: "Internal Server Error" });
     }
-
-    // Check if the old password matches the one in the database
-    const isPasswordValid = await bcrypt.compare(oldPassword, user.password);
-
-    if (!isPasswordValid) {
-      return res.status(401).json({ message: "Invalid old password" });
-    }
-    console.log(user.password)
-    // Hash the new password before saving it to the database
-    const hashedPassword = await bcrypt.hash(newPassword, 10);
-
-    // Update the user's password in the database
-    user.password = hashedPassword;
-    await user.save();
-   
-
-    res.status(200).json({ message: "Password changed successfully" });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Internal Server Error" });
   }
-});
-   //faculty change password
-app.post("/faculty/changing-password", async (req, res) => {
-  const { email, oldPassword, newPassword } = req.body;
+);
+//faculty change password
+app.post(
+  "/faculty/changing-password",
+  Auth,
+  checkRole(["faculty"]),
+  async (req, res) => {
+    const { email, oldPassword, newPassword } = req.body;
 
-  try {
-    // Retrieve the user from the database using the email
-    const user = await Facultie.findOne({ email });
+    try {
+      // Retrieve the user from the database using the email
+      const user = await Facultie.findOne({ email });
 
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      // Check if the old password matches the one in the database
+      const isPasswordValid = await bcrypt.compare(oldPassword, user.password);
+
+      if (!isPasswordValid) {
+        return res.status(401).json({ message: "Invalid old password" });
+      }
+      console.log(user.password);
+      // Hash the new password before saving it to the database
+      const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+      // Update the user's password in the database
+      user.password = hashedPassword;
+      await user.save();
+
+      res.status(200).json({ message: "Password changed successfully" });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ message: "Internal Server Error" });
     }
-
-    // Check if the old password matches the one in the database
-    const isPasswordValid = await bcrypt.compare(oldPassword, user.password);
-
-    if (!isPasswordValid) {
-      return res.status(401).json({ message: "Invalid old password" });
-    }
-    console.log(user.password)
-    // Hash the new password before saving it to the database
-    const hashedPassword = await bcrypt.hash(newPassword, 10);
-
-    // Update the user's password in the database
-    user.password = hashedPassword;
-    await user.save();
-   
-
-    res.status(200).json({ message: "Password changed successfully" });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Internal Server Error" });
   }
-});
-     //student change password
-app.post("/student/changing-password", async (req, res) => {
-  const { email, oldPassword, newPassword } = req.body;
+);
+//student change password
+app.post(
+  "/student/changing-password",
+  Auth,
+  checkRole(["student"]),
+  async (req, res) => {
+    const { email, oldPassword, newPassword } = req.body;
 
-  try {
-    // Retrieve the user from the database using the email
-    const user = await Addstd.findOne({ email });
+    try {
+      // Retrieve the user from the database using the email
+      const user = await Addstd.findOne({ email });
 
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      // Check if the old password matches the one in the database
+      const isPasswordValid = await bcrypt.compare(oldPassword, user.password);
+
+      if (!isPasswordValid) {
+        return res.status(401).json({ message: "Invalid old password" });
+      }
+      console.log(user.password);
+      // Hash the new password before saving it to the database
+      const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+      // Update the user's password in the database
+      user.password = hashedPassword;
+      await user.save();
+
+      res.status(200).json({ message: "Password changed successfully" });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ message: "Internal Server Error" });
     }
-
-    // Check if the old password matches the one in the database
-    const isPasswordValid = await bcrypt.compare(oldPassword, user.password);
-
-    if (!isPasswordValid) {
-      return res.status(401).json({ message: "Invalid old password" });
-    }
-    console.log(user.password)
-    // Hash the new password before saving it to the database
-    const hashedPassword = await bcrypt.hash(newPassword, 10);
-
-    // Update the user's password in the database
-    user.password = hashedPassword;
-    await user.save();
-   
-
-    res.status(200).json({ message: "Password changed successfully" });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Internal Server Error" });
   }
-});
-
+);
 
 app.listen(port, () => {
   console.log(`Server running on port ${port}`);
