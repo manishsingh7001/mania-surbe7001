@@ -104,7 +104,7 @@ app.post("/adminlogin", async (req, res) => {
       res.status(401).json({ error: "Invalid email or password" });
     }
   } catch (error) {
-    console.error("Error logging in student:", error);
+    console.error("Error logging in Admin:", error);
     res.status(500).json({ error: "Internal Server Error" });
   }
 });
@@ -521,7 +521,7 @@ app.get("/userlogin", async (req, res) => {
       return res.status(404).json({ error: "Faculty not found" });
     }
   } catch (error) {
-    console.error("Error during faculty login:", error);
+    console.error("Error during student login:", error);
     res.status(500).json({ error: "Internal Server Error" });
   }
 });
