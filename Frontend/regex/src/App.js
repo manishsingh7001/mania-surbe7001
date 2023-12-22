@@ -87,8 +87,8 @@ function App() {
           <Route path="/user" element={<h1>User</h1>} />
 
           {/* <Route path="/admin" element={<Admin/>} /> */}
-          <Route path="/admin/login" element={<AdminLogin />} />
-          <Route path="/admin/signup" element={<AdminSignup />} />
+          <Route path="/" element={<AdminLogin />} />
+           <Route path="/admin/signup" element={<AdminSignup />} />
           <Route path="/admin/dashboard" element={<AdminPanel />} />
           <Route path="/admin/logout" element={<h1>Logout</h1>} />
 
@@ -126,7 +126,7 @@ function App() {
           <Route path="/pdf/:id" element={<GetTimeTable />} />
 
           <Route path="/usersignup" element={<UserSignup />} />
-          <Route path="/userlogin" element={<UserLogin />} />
+           <Route path="/userlogin" element={<UserLogin />} />
 
           <Route path="/profile" element={<Profile />} />
           <Route path="/students" element={<Students />} />
