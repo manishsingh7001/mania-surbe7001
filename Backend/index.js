@@ -23,16 +23,87 @@ const Auth = require("./middleware/Authentication");
 const checkRole = require("./middleware/Authorization");
 
 const port = 5000;
-// const { body, validationResult } = require("express-validator");
 const { body, validationResult } = require("express-validator");
 const TimeTable = require("./db/TimeTable");
-// require('./db/config')
 require("./db/dbconfig");
 
 app.use(express.json());
 app.use(cors());
 app.use(bodyparser.urlencoded({ extended: true }));
 app.use(express.static(path.resolve(__dirname, "public")));
+
+
+// login
+const validateEmailFormat = (email) => {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return emailRegex.test(email);
+};
+
+// Middleware to check password format
+const validatePasswordFormat = (password) => {
+  const passwordRegex = /^(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[^a-zA-Z0-9]).{8,}$/;
+  return passwordRegex.test(password);
+};
+
+app.post("/login", async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    if (!email || !password) {
+      return res.status(400).json({ error: "Email and password are required" });
+    }
+
+    if (!validateEmailFormat(email)) {
+      return res.status(400).json({ error: "Invalid email format" });
+    }
+
+    if (!validatePasswordFormat(password)) {
+      return res.status(400).json({
+        error:
+          "Invalid password format. Password must contain at least 8 characters, including at least one uppercase letter, one lowercase letter, one number, and one special character.",
+      });
+    }
+
+    let user;
+    let userType;
+
+    // Check Admin schema
+    user = await Admin.findOne({ email });
+    if (user) {
+      userType = "admin";
+    } else {
+      // Check Faculty schema
+      user = await Faculty.findOne({ email });
+      if (user) {
+        userType = "faculty";
+      } else {
+        // Check Student schema
+        user = await Student.findOne({ email });
+        if (user) {
+          userType = "student";
+        }
+      }
+    }
+
+    if (!user) {
+      return res.status(401).json({ error: "Invalid email or password" });
+    }
+
+    if (await bcrypt.compare(password, user.password)) {
+      const token = jwt.sign({ _id: user._id, email: user.email }, "regex", {
+        expiresIn: "1h",
+      });
+
+      res.json({ token, userType, user });
+    } else {
+      res.status(401).json({ error: "Invalid email or password" });
+    }
+  } catch (error) {
+    console.error("Error logging in:", error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
 
 // Admin Signup
 
@@ -83,31 +154,7 @@ app.post("/adminsignup", async (req, res) => {
     res.status(500).json({ error: "Internal Server Error" });
   }
 });
-// Admin Login
-app.post("/adminlogin", async (req, res) => {
-  try {
-    const { email, password } = req.body;
 
-    if (!email || !password) {
-      return res.status(400).json({ error: "Email and password are required" });
-    }
-
-    const admin = await Admin.findOne({ email });
-
-    if (admin && (await bcrypt.compare(password, admin.password))) {
-      const token = jwt.sign({ _id: admin._id, email: admin.email }, "regex", {
-        expiresIn: "1h",
-      });
-
-      res.json({ token, admin });
-    } else {
-      res.status(401).json({ error: "Invalid email or password" });
-    }
-  } catch (error) {
-    console.error("Error logging in Admin:", error);
-    res.status(500).json({ error: "Internal Server Error" });
-  }
-});
 
 //Student Registration
 
@@ -488,81 +535,7 @@ app.delete(
     }
   }
 );
-//user Login
-app.get("/userlogin", async (req, res) => {
-  try {
-    const { email, password } = req.body;
 
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!email || !emailRegex.test(email)) {
-      return res.status(400).json({ error: "Invalid email format" });
-    }
-
-    const passwordRegex =
-      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
-    if (!password || !passwordRegex.test(password)) {
-      return res.status(400).json({
-        error:
-          "Invalid password format. Password must be at least 8 characters long and contain at least one lowercase letter, one uppercase letter, one number, and one special character.",
-      });
-    }
-
-    const student = await Addstd.findOne({ email });
-
-    if (student && (await bcrypt.compare(password, student.password))) {
-      const token = jwt.sign(
-        { _id: student._id, email: student.email },
-        "regex",
-        { expiresIn: "1h" }
-      );
-
-      res.json({ token, student });
-    } else {
-      return res.status(404).json({ error: "Faculty not found" });
-    }
-  } catch (error) {
-    console.error("Error during student login:", error);
-    res.status(500).json({ error: "Internal Server Error" });
-  }
-});
-
-//faculty login
-app.post("/facultylogin", async (req, res) => {
-  try {
-    const { email, password } = req.body;
-
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!email || !emailRegex.test(email)) {
-      return res.status(400).json({ error: "Invalid email format" });
-    }
-
-    const passwordRegex =
-      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
-    if (!password || !passwordRegex.test(password)) {
-      return res.status(400).json({
-        error:
-          "Invalid password format. Password must be at least 8 characters long and contain at least one lowercase letter, one uppercase letter, one number, and one special character.",
-      });
-    }
-
-    const faculty = await teacher.findOne({ email });
-
-    if (faculty && (await bcrypt.compare(password, faculty.password))) {
-      const token = jwt.sign(
-        { _id: faculty._id, email: faculty.email },
-        "regex",
-        { expiresIn: "1h" }
-      );
-
-      res.json({ token, faculty });
-    } else {
-      return res.status(404).json({ error: "Faculty not found" });
-    }
-  } catch (error) {
-    console.error("Error during faculty login:", error);
-    res.status(500).json({ error: "Internal Server Error" });
-  }
-});
 
 app.post(
   "/addquiz",
