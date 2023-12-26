@@ -17,47 +17,47 @@ import Detail from './Detail';
 const TotalStudents = () => {
   
   const [getuserdata, setUserdata ] = useState([]);
-  console.log(getuserdata)
       const navigate = useNavigate();
      
-      const getdata = async (e) => {
-     
-        console.log("hello");
-       
-            
-
-            const res = await fetch("http://localhost:5000/getdata", {
-                method: 'get',
-                
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-            });
-
-            const data = await res.json();
-            console.log(data)
-
-            if(res.status === 404 || !data ){
-                
-              console.log("error");
+      const getdata = async () => {
+        try {
+          const res = await fetch("http://localhost:5000/getdata", {
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: "Bearer " + localStorage.getItem("adminToken"),
+            },
+          });
+      
+          if (res.status === 401) {
+            // Handle unauthorized access
+            console.log("Unauthorized access. Redirect to login page.");
+            navigate("/admin/login");
+            return;
           }
-          else{
-            setUserdata(data)
-             
+      
+          const responseData = await res.json();
+      
+      
+          if (Array.isArray(responseData.data)) {
+            // Update the state with the received data
+            setUserdata(responseData.data);
+          } else {
+            // Handle other cases (e.g., 404 or invalid response)
+            console.log("Unexpected response:", res.status, responseData);
           }
+        } catch (error) {
+          console.error("Error fetching data:", error);
         }
+      };
+      
+      
+      useEffect(() => {
+        getdata();
+      }, []);
+      
 
-// const view=(e)=>{
-//    navigate("/detail")
-// }
 
-// const edit=(e)=>{
-//   navigate("/update")
-// }
 
-useEffect(()=>{
-  getdata();
-},[])
 
 const deletestd = async (id)=> {
   // eslint-disable-next-line no-restricted-globals
@@ -66,6 +66,7 @@ const deletestd = async (id)=> {
     method: "DELETE",
     headers: {
       'Content-Type': 'application/json',
+      Authorization: "Bearer " + localStorage.getItem("adminToken"),
   }
   })
   const deleteuser = await res2.json();
@@ -76,10 +77,11 @@ const deletestd = async (id)=> {
   }
   else{
     console.log("student deleted successfully");
-    navigate("/totalstudents")
+    navigate("/admin/totalstudents")
   }
 }
 }
+
 
 
   return (
@@ -117,13 +119,17 @@ const deletestd = async (id)=> {
       <td>{element.email}</td>
       <td>{element.contactnumber}</td>
       <td>{element.courses}</td>
-      <td className="d-flex justify-content-between" >
+      <td className="d-flex justify-content-between">
         
-        <NavLink to={`http://localhost:3000/detail/${element._id}`}><button className='btn btn-success'><RemoveRedEyeIcon/></button> </NavLink>
-        
-        
+      {localStorage.getItem("adminToken") ? (
+        <NavLink to={`http://localhost:3000/admin/students/detail/${element._id}`}>
+          <button className='btn btn-success'><RemoveRedEyeIcon/></button>
+        </NavLink>
+      ) : null}
+
+      
        
-       <NavLink to={`http://localhost:3000/update/${element._id}`}><button  className='btn btn-primary'><EditIcon/></button></NavLink> 
+       <NavLink to={`http://localhost:3000/admin/students/update/${element._id}`}><button  className='btn btn-primary'><EditIcon/></button></NavLink> 
        <button className='btn btn-danger' onClick={()=>deletestd(element._id)}><DeleteIcon/></button>
       </td>
     </tr>

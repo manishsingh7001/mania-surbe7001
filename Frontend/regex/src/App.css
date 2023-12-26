@@ -83,11 +83,29 @@ display: block; */
 
 .register{
   
-  border: 1px outset;
-  width: 70%;
+  /* border: 1px outset; */
+  width: 30%;
   margin: 1rem;
+  margin-left: 40rem;
+  margin-top: 10rem;
+  height: 40rem;
   padding: 1rem 5rem;
   box-shadow: 2px 2px 20px #95b7d9;
+  border-radius: 20px;
+}
+
+.login {
+text-align: center;
+margin-top: 8rem;
+
+}
+.loginlabel{
+  margin-bottom: 0;
+text-align: center;
+}
+
+.forgot {
+  color: black;
 }
 
 .inputbox{
@@ -96,8 +114,13 @@ display: block; */
   padding: 1rem;
   width: 100%;
   border: 1px solid skyblue;
-  border-radius: 5px;
+  border-radius: 20px;
   outline: none;
+  align-items: center;
+}
+
+#box1{
+  margin-top: 2rem;
 }
 
 h3{
@@ -115,9 +138,10 @@ label{
 }
 
 .button{
-  margin: 25px 0px;
+  margin: 25px 130px;
   padding: 1rem;
-  width: 90%;
+  width: 30%;
+  align-items: center;
   border-color: skyblue;
   border: 1px solid;
   cursor: pointer;
@@ -126,6 +150,7 @@ label{
   font-weight: bold;
   font-size: 20px;
   color: white;
+  border-radius: 20px;
 }
 
 .heading{

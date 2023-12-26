@@ -252,11 +252,12 @@ app.get("/getdata", Auth, checkRole(["admin"]), async (req, res) => {
   try {
     // Retrieve data without any authentication or validation
     const std = await Addstd.find();
-    res.json("Student Details Found Successfully", std);
+    return res.status(200).json({ message: "Student Details Found Successfully", data: std });
   } catch (error) {
     res.status(500).json({ error: "Internal Server Error" });
   }
 });
+
 
 // Student Profile View
 app.get(
